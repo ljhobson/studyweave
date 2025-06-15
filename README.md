@@ -6,7 +6,7 @@ This is a tool which aims to let educators visualise curricula in a format that 
 
 Run the following commands in your terminal
 
-1 `git pull https://github.com/ljhobson/studyweave.git`
+1 `git clone https://github.com/ljhobson/studyweave.git`
 
 2 `cd studyweave`
 
