@@ -16,6 +16,31 @@ app.get('/', (req, res) => {
     res.sendFile(__dirname + "/resources/index.html");
 });
 
+app.get('/design', (req, res) => {
+    res.status(200);
+    res.sendFile(__dirname + "/resources/design.html");
+});
+
+app.get('/wishlist', (req, res) => {
+    res.status(200);
+    res.sendFile(__dirname + "/resources/error.html");
+});
+
+app.get('/contribute', (req, res) => {
+    res.status(200);
+    res.sendFile(__dirname + "/resources/error.html");
+});
+
+app.get('/view', (req, res) => {
+    res.status(200);
+    res.sendFile(__dirname + "/resources/error.html");
+});
+
+app.get('/profile', (req, res) => {
+    res.status(200);
+    res.sendFile(__dirname + "/resources/error.html");
+});
+
 app.get('/resources/:resource', (req, res) => {
     res.status(200);
     res.sendFile(__dirname + "/resources/" + req.params.resource);

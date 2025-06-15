@@ -1,7 +1,23 @@
 # StudyWeave
 
-This is a tool which aims to let educators visualise curricula in a format that allows them to structure and communicate more effectively the intended content of standards, courses and curricula documents
+This is a tool which aims to let educators visualise curricula in a format that allows them to structure and communicate more effectively the intended content of standards, courses and curricula documents.
 
 ## How to use
 
-I'll fill this out when there are steps to be able to use it.
+Run the following commands in your terminal
+
+1 `git pull https://github.com/ljhobson/studyweave.git`
+
+2 `cd studyweave`
+
+Make sure you have npm then run the following command
+
+3 `npm install`
+
+then boom, just run the app
+
+4 `node app.js`
+
+and go to the following URL in your browser
+
+`http://localhost:3000/`

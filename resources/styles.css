@@ -21,11 +21,21 @@ body, html {
   display: flex;
   flex-direction: column;
   padding: 20px;
+  flex-shrink: 0;
 }
 
 .title {
   font-size: 1.5rem;
   margin-bottom: 1.5rem;
+}
+
+h1 a {
+  text-decoration: none;
+  color: inherit;
+}
+
+h2 {
+	margin-bottom: 10px;
 }
 
 .nav a {
@@ -77,6 +87,7 @@ body, html {
 
 .main-content {
   flex-grow: 1;
+  padding: 40px;
   background-color: #f9fafb;
 }
 
@@ -96,3 +107,22 @@ body, html {
 	display: block;
 	background-color: #eee;
 }
+
+.nav a.active {
+  background-color: #2563eb;
+  color: white;
+  font-weight: bold;
+  position: relative;
+}
+
+.nav a.active::before {
+  content: "";
+  position: absolute;
+  left: -20px;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background-color: #3b82f6;
+  border-radius: 2px;
+}
+
