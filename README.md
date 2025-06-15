@@ -6,17 +6,17 @@ This is a tool which aims to let educators visualise curricula in a format that 
 
 Run the following commands in your terminal
 
-1 `git clone https://github.com/ljhobson/studyweave.git`
+`git clone https://github.com/ljhobson/studyweave.git`
 
-2 `cd studyweave`
+`cd studyweave`
 
 Make sure you have npm then run the following command
 
-3 `npm install`
+`npm install`
 
 then boom, just run the app
 
-4 `node app.js`
+`node app.js`
 
 and go to the following URL in your browser
 
