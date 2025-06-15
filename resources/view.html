@@ -15,7 +15,7 @@
         <a href="/wishlist">Wishlist ⏳</a>
         <a href="/contribute">Contribute ⏳</a>
         <a href="/design">Curriculum Design 🛠️</a>
-        <a href="/view">Graph Traversing</a>
+        <a href="/view" class="active">Graph Traversing</a>
         <div class="divider"></div>
 		<a href="/profile" class="profile-link">Profile</a>
       </nav>
@@ -27,10 +27,13 @@
         <button class="btn">Settings</button>
       </div-->
     </aside>
-    <main class="main-content">
-      <h2>🚧 In the works 🚧</h2>
-      <p>This feature has not been implemented yet.</p>
-    </main>
+    <div class="content">
+		<canvas id="canvas">Your browser does not support HTML5 canvas.</canvas>
+		<div class="settings">
+			<button class="btn" onclick="document.getElementById('fileInput').click()">Import</button>
+			<input type="file" id="fileInput" style="display: none;" onchange="importCurriculum(this.files[0])">
+		</div>
+	</div>
   </div>
 </body>
 </html>

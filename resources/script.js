@@ -1,9 +1,13 @@
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 
-const nodeStyle = {
-  fillColor: "#2980b9",
-  strokeColor: "#1c5980",
+var nodeStyle = {
+//  fillColor: "#8729b9", // purple
+//  strokeColor: "#501c89",
+  fillColor: "#8029b9", // blue
+  strokeColor: "#591c80",
+//  fillColor: "#49b967", // green
+//  strokeColor: "#2c8940",
   textColor: "#fff",
   font: "16px 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
   shadowColor: "rgba(0,0,0,0.15)",
@@ -14,30 +18,98 @@ const nodeStyle = {
   lineHeight: 20,
 };
 
-let nodes = [
-  { id: 0, text: "Atom", connections: [1, 2, 3, 4] },
-  { id: 1, text: "Electron", connections: [0, 2, 3] },
-  { id: 2, text: "Proton", connections: [0, 1, 3] },
-  { id: 3, text: "Nucleus", connections: [0, 1, 2] },
-  { id: 4, text: "Quantum Mechanics", connections: [0, 1, 6, 8, 9] },
-  { id: 5, text: "Gravity", connections: [6, 10, 11] },
-  { id: 6, text: "General Relativity", connections: [5, 4, 11] },
-  { id: 7, text: "Mass", connections: [5, 10] },
-  { id: 8, text: "Wave-Particle Duality", connections: [1, 4, 9] },
-  { id: 9, text: "Photon", connections: [1, 4, 8] },
-  { id: 10, text: "Inertia", connections: [5, 7, 11] },
-  { id: 11, text: "Force", connections: [5, 6, 10, 12] },
-  { id: 12, text: "Newton's Laws", connections: [11, 13, 14] },
-  { id: 13, text: "Acceleration", connections: [12, 14] },
-  { id: 14, text: "Velocity", connections: [12, 13, 15] },
-  { id: 15, text: "Kinetic Energy", connections: [14, 16, 17] },
-  { id: 16, text: "Potential Energy", connections: [15, 17] },
-  { id: 17, text: "Conservation of Energy", connections: [15, 16] },
-  { id: 18, text: "Thermodynamics", connections: [17, 19, 20] },
-  { id: 19, text: "Entropy", connections: [18, 20] },
-  { id: 20, text: "Heat", connections: [18, 19] },
+var nodes = [
+  { id: 0, text: "Binary & Data Representation", connections: [1, 2] },
+  { id: 1, text: "Logic Gates", connections: [0, 3] },
+  { id: 2, text: "Number Systems", connections: [0, 4] },
+  { id: 3, text: "Boolean Algebra", connections: [1, 5] },
+  { id: 4, text: "Data Types", connections: [2, 6, 7] },
+  { id: 5, text: "Computer Architecture", connections: [3, 8] },
+  { id: 6, text: "Variables & Memory", connections: [4, 9] },
+  { id: 7, text: "File Storage & Encoding", connections: [4, 10] },
+  { id: 8, text: "CPU & Instruction Cycle", connections: [5, 9, 11] },
+  { id: 9, text: "Low-Level Programming", connections: [6, 8, 12] },
+  { id: 10, text: "Operating Systems", connections: [7, 11, 13] },
+  { id: 11, text: "Virtual Memory & Processes", connections: [8, 10] },
+  { id: 12, text: "Compilers & Interpreters", connections: [9, 14] },
+  { id: 13, text: "Concurrency & Threads", connections: [10, 15] },
+  { id: 14, text: "Programming Languages", connections: [12, 16, 17] },
+  { id: 15, text: "Parallel Computing", connections: [13, 18] },
+  { id: 16, text: "Data Structures", connections: [14, 17, 19] },
+  { id: 17, text: "Algorithms", connections: [14, 16, 20] },
+  { id: 18, text: "Distributed Systems", connections: [15, 21] },
+  { id: 19, text: "Object-Oriented Programming", connections: [16, 22] },
+  { id: 20, text: "Algorithm Complexity", connections: [17, 23] },
+  { id: 21, text: "Cloud Computing", connections: [18, 24] },
+  { id: 22, text: "Software Design Patterns", connections: [19, 25] },
+  { id: 23, text: "Search & Sorting", connections: [20] },
+  { id: 24, text: "Web Development", connections: [21, 26] },
+  { id: 25, text: "Software Engineering", connections: [22, 27] },
+  { id: 26, text: "Client-Server Architecture", connections: [24, 28] },
+  { id: 27, text: "Testing & Debugging", connections: [25, 29] },
+  { id: 28, text: "Networking Protocols", connections: [26, 30] },
+  { id: 29, text: "Version Control", connections: [27] },
+  { id: 30, text: "Cybersecurity", connections: [28] }
 ];
 
+var startNode = 4; // in this case
+
+
+function importCurriculum(file) {
+	if (!file) {
+		return;
+	}
+	
+	const reader = new FileReader();
+
+	reader.onload = function(event) {
+		var res = JSON.parse(event.target.result);
+		nodes = res.nodes;
+		nodeStyle = res.nodeStyle;
+		makeBidirectional(nodes);
+		nodeMap = {};
+		nodes.forEach(updateNodeDimensions);
+		nodes.forEach(n => nodeMap[n.id] = n);
+		console.log("import complete");
+		selectedNode = nodes[0];
+		centerNode(selectedNode);
+		positionConnections(selectedNode, 1);
+	};
+	
+	console.log("attempting to import");
+	
+	reader.readAsText(file);
+
+//	const formData = new FormData();
+//	formData.append("myFile", file);
+//	console.log(formData);
+//	fetch("/upload", {
+//		method: "POST",
+//		body: formData
+//	})
+//	.then(response => {
+//		if (!response.ok) throw new Error("Upload failed");
+//		return response.text();
+//	})
+//	.then(result => {
+//		console.log("Upload successful:", result);
+//	})
+//	.catch(error => {
+//		console.error("Error uploading file:", error);
+//	});
+}
+
+function generateTopic() {
+	var topic = document.getElementById("topic").value;
+	if (topic.length > 0) {
+		const link = document.createElement('a');
+		link.href = '/api/generate/' + topic;
+		link.download = ''; // optional: lets browser download instead of navigating
+		document.body.appendChild(link);
+		link.click();
+		link.remove();
+	}
+}
 
 function makeBidirectional(nodes) {
   const map = new Map(nodes.map(n => [n.id, n]));
@@ -51,7 +123,6 @@ function makeBidirectional(nodes) {
   });
 }
 makeBidirectional(nodes);
-
 let nodeMap = {};
 nodes.forEach(n => nodeMap[n.id] = n);
 
@@ -96,8 +167,8 @@ function updateNodeDimensions(node) {
 
 nodes.forEach(updateNodeDimensions);
 
-let selectedNode = nodes[0];
-let oldNode = nodes[0];
+let selectedNode = nodes[startNode];
+let oldNode = selectedNode;
 let transitioning = false;
 let transitionProgress = 0;
 let transitionFrom = null;
