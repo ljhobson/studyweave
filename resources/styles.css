@@ -1,0 +1,98 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body, html {
+  height: 100%;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.container {
+  display: flex;
+  height: 100vh;
+}
+
+.sidebar {
+  width: 280px;
+  background-color: #1f2937; /* dark gray-blue */
+  color: white;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+}
+
+.title {
+  font-size: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.nav a {
+  color: #d1d5db;
+  text-decoration: none;
+  display: block;
+  padding: 10px;
+  border-radius: 6px;
+  transition: background 0.2s;
+}
+
+.nav a:hover {
+  background-color: #374151;
+}
+
+.actions {
+  margin-top: auto;
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.footer {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  background-color: #3b82f6;
+  color: white;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.btn:hover {
+  background-color: #2563eb;
+}
+
+.btn.danger {
+  background-color: #ef4444;
+}
+
+.btn.danger:hover {
+  background-color: #dc2626;
+}
+
+.main-content {
+  flex-grow: 1;
+  background-color: #f9fafb;
+}
+
+.divider {
+  height: 1px;
+  background-color: #4b5563; /* subtle gray */
+  margin: 20px 0 10px;
+  opacity: 0.5;
+}
+
+.profile-link {
+  margin-top: 10px;
+  display: block;
+}
+
+#canvas {
+	display: block;
+	background-color: #eee;
+}

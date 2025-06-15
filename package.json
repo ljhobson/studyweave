@@ -1,0 +1,14 @@
+{
+  "name": "studyweave",
+  "version": "1.0.0",
+  "description": "This is a tool which aims to let educators visualise curricula in a format that allows them to structure and communicate more effectively the intended content of standards, courses and curricula documents",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Louis Hobson",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^5.1.0"
+  }
+}
