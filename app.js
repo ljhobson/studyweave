@@ -1,8 +1,61 @@
 const express = require('express');
+const fs = require('fs');
+
+const sqlite3 = require('sqlite3').verbose();
+const bcrypt = require('bcryptjs');
+var crypto = require('crypto');
+
 require('dotenv').config();
 
 const app = express();
 const PORT = 3000;
+
+var mappings = {};
+mappings['/'] = 'index.html';
+mappings['/design'] = 'design.html';
+mappings['/view'] = 'view.html';
+mappings['/contribute'] = 'error.html';
+mappings['/wishlist'] = 'error.html';
+mappings['/login'] = 'login.html';
+mappings['/register'] = 'register.html';
+mappings['/profile'] = 'profile.html';
+
+var defaultMapping = 'error.html';
+
+
+const db = new sqlite3.Database('./users.db', (err) => {
+  if (err) {
+    console.error("Error opening database:", err);
+  } else {
+    console.log('Connected to the SQLite database.');
+  }
+});
+
+
+db.run(`CREATE TABLE IF NOT EXISTS users (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  username TEXT UNIQUE,
+  password TEXT
+)`);
+
+db.run(`CREATE TABLE IF NOT EXISTS sessions (
+  session_id TEXT PRIMARY KEY,
+  user_id INTEGER,
+  username TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+)`);
+
+db.run(`CREATE TABLE IF NOT EXISTS user_files (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER,
+  filename TEXT,
+  filepath TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(user_id) REFERENCES users(id)
+)`);
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 app.listen(PORT, (error) =>{
     if(!error)
@@ -12,35 +65,273 @@ app.listen(PORT, (error) =>{
     }
 );
 
-app.get('/', (req, res) => {
-    res.status(200);
-    res.sendFile(__dirname + "/resources/index.html");
+app.post('/register', (req, res) => {
+  const { username, password } = req.body;
+
+  if (!username || !password) {
+    return res.status(400).json({ message: 'Username and password are required.' });
+  }
+
+  // Hash the password before saving to DB
+  bcrypt.hash(password, 10, (err, hashedPassword) => {
+    if (err) {
+      return res.status(500).json({ message: 'Error hashing password.' });
+    }
+
+    db.run("INSERT INTO users (username, password) VALUES (?, ?)", [username, hashedPassword], function(err) {
+      if (err) {
+        return res.status(500).json({ message: 'Error saving user.' });
+      }
+      res.status(201).json({ message: 'User registered successfully.' });
+    });
+  });
 });
 
-app.get('/design', (req, res) => {
-    res.status(200);
-    res.sendFile(__dirname + "/resources/design.html");
+
+app.post('/login', (req, res) => { // shouldn't override a sessionID token, just refresh the time, incase multiple people logged in
+  const { username, password } = req.body;
+
+  if (!username || !password) {
+    return res.status(400).json({ message: 'Username and password are required.' });
+  }
+
+  const sql = 'SELECT * FROM users WHERE username = ?';
+  db.get(sql, [username], (err, user) => {
+    if (err) {
+      return res.status(500).json({ message: 'Error retrieving user.' });
+    }
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+
+    bcrypt.compare(password, user.password, (err, result) => {
+      if (err) {
+        return res.status(500).json({ message: 'Error comparing password.' });
+      }
+
+      if (result) {
+		  // Generate random session ID
+		  const sessionId = crypto.randomUUID(); // or use your own function
+		  db.run(
+			`INSERT INTO sessions (session_id, user_id, username) VALUES (?, ?, ?)`,
+			[sessionId, user.id, user.username],
+			(err) => {
+			  if (err) return res.status(500).json({ message: 'Failed to store session.' });
+
+			  // Set cookie
+			  res.setHeader('Set-Cookie', `sessionId=${sessionId}; HttpOnly; Path=/; Max-Age=3600`);
+			  res.status(200).json({ message: 'Login successful.' });
+			}
+		  );
+	  } else {
+        return res.status(400).json({ message: 'Incorrect Password.' });
+	  }
+
+    });
+  });
 });
 
-app.get('/wishlist', (req, res) => {
-    res.status(200);
-    res.sendFile(__dirname + "/resources/error.html");
+app.post('/logout', (req, res) => { // shouldn't rely on sessionId tokens to know when logged in
+  const sessionId = req.headers.cookie
+    ?.split(';')
+    .map(c => c.trim())
+    .find(c => c.startsWith('sessionId='))
+    ?.split('=')[1];
+
+  if (!sessionId) return res.status(200).send('Already logged out');
+
+  db.run(`DELETE FROM sessions WHERE session_id = ?`, [sessionId], () => {
+    res.setHeader('Set-Cookie', 'sessionId=; Max-Age=0; Path=/');
+    res.status(200).send('Logged out');
+  });
 });
 
-app.get('/contribute', (req, res) => {
-    res.status(200);
-    res.sendFile(__dirname + "/resources/error.html");
+app.post('/upload-json', async (req, res) => {
+  const filename = req.headers['x-filename'];
+  if (!filename) {
+    return res.status(400).send('Missing filename header');
+  }
+  
+  // Get user_id from session
+  const userId = await getUserIdFromSession(req);
+  if (!userId) {
+    return res.status(401).send('Unauthorized: No valid session');
+  }
+
+  const uploadDir = "user-resources/";
+  if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir);
+  }
+
+  const filePath = uploadDir + Date.now() + '-' + filename;
+  fs.writeFile(filePath, JSON.stringify(req.body), (err) => {
+    if (err) {
+      console.error('Failed to save file:', err);
+      return res.status(500).send('Failed to save file');
+    }
+    // Insert into user_files table
+    db.run(
+      `INSERT INTO user_files (user_id, filename, filepath) VALUES (?, ?, ?)`,
+      [userId, filename, filePath],
+      function (dbErr) {
+        if (dbErr) {
+          console.error('Failed to save file info to DB:', dbErr);
+          return res.status(500).send('File saved but failed to save metadata');
+        }
+
+        res.send('File uploaded and saved as ' + filePath);
+      }
+    );
+  });
 });
 
-app.get('/view', (req, res) => {
-    res.status(200);
-    res.sendFile(__dirname + "/resources/view.html");
+app.get('/api/my-files', async (req, res) => {
+  const userId = await getUserIdFromSession(req);
+  if (!userId) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  db.all(
+    'SELECT id, filename, filepath, created_at FROM user_files WHERE user_id = ? ORDER BY created_at DESC',
+    [userId],
+    (err, rows) => {
+      if (err) {
+        console.error('Error fetching user files:', err);
+        return res.status(500).json({ error: 'Database error' });
+      }
+
+      // Send JSON array of files
+      res.json(rows);
+    }
+  );
 });
 
-app.get('/profile', (req, res) => {
-    res.status(200);
-    res.sendFile(__dirname + "/resources/error.html");
-});
+
+// Protected route: only accessible by logged-in users
+//app.get('/home', checkAuth, (req, res) => {
+//  res.status(200).send(`Welcome, ${req.session.user.username}!`);
+//});
+//
+// Public route: accessible by everyone
+//app.get('/public', (req, res) => {
+//  res.status(200).send('This is a public page.');
+//});
+
+function insertHTML(data, pattern, content) {
+	return data.replace(new RegExp(pattern, 's'), `${content}`);
+}
+
+function getAttributes(element) {
+  element = element.trim();
+
+  // Get string between '<' and '>' (the opening tag)
+  const openTagStart = element.indexOf('<');
+  const openTagEnd = element.indexOf('>');
+  if (openTagStart === -1 || openTagEnd === -1) return {};
+
+  const openTag = element.slice(openTagStart + 1, openTagEnd).trim();
+
+  // Remove tag name (e.g., 'a')
+  const parts = openTag.split(/\s+/); // still OK to split by space
+  parts.shift(); // remove the tag name
+
+  const attrs = {};
+  for (const part of parts) {
+    const [key, val] = part.split('=');
+    if (key && val) {
+      attrs[key] = val;
+    }
+  }
+
+  return attrs;
+}
+
+function buildElementFromAttributes(attrs) {
+  let attrString = '';
+
+  for (const key in attrs) {
+    if (attrs.hasOwnProperty(key)) {
+      attrString += ` ${key}=${attrs[key]}`;
+    }
+  }
+
+  return `<a${attrString}></a>`;
+}
+
+function isLoggedIn(req) {
+	return new Promise((resolve, reject) => {
+		const cookie = req.headers.cookie || '';
+		const sessionId = cookie.split(';').map(c => c.trim()).find(c => c.startsWith('sessionId='))?.split('=')[1];
+		if (!sessionId) return resolve(false);
+
+		db.get('SELECT username FROM sessions WHERE session_id = ?', [sessionId], (err, row) => {
+			if (err || !row) {
+				return resolve(false);
+			}
+			return resolve(true);
+		});
+	});
+}
+
+function getUserIdFromSession(req) {
+  return new Promise((resolve) => {
+    const cookie = req.headers.cookie || '';
+    const sessionId = cookie
+      .split(';')
+      .map(c => c.trim())
+      .find(c => c.startsWith('sessionId='))
+      ?.split('=')[1];
+
+    if (!sessionId) return resolve(null);
+
+    db.get('SELECT user_id FROM sessions WHERE session_id = ?', [sessionId], (err, row) => {
+      if (err || !row) return resolve(null);
+      resolve(row.user_id);
+    });
+  });
+}
+
+for (var key in mappings) {
+	app.get(key, async (req, res) => {
+		var loggedInPromise = isLoggedIn(req); // start running in parallel
+		var activeTab = req.path;
+		try {
+			var data = await fs.promises.readFile(__dirname + "/resources/" + mappings[req.path], 'utf8');
+
+			var nav = await fs.promises.readFile(__dirname + "/resources/nav.html", 'utf8');
+			navItems = nav.split('\n');
+			
+      		var loggedIn = await loggedInPromise;
+			navContent = "";
+			for (var i = 0; i < navItems.length; i++) {
+				var item = navItems[i];
+				var attributes = getAttributes(item);
+				if ("noauth" in attributes) {
+					if (!loggedIn) {
+						navContent += item;
+					}
+				} else if ("auth" in attributes) {
+					if (loggedIn) {
+						navContent += item;
+					}
+				} else {
+					navContent += item;
+				}
+			}
+			
+			var finalHtml = insertHTML(data, `<nav class="nav">.*?<\/nav>`, navContent);
+
+			res.status(200).send(finalHtml);
+		} catch (err) {
+			res.status(500).send('Error reading the HTML file or content file');
+			console.error(err);
+		}
+	});
+}
+
+
+
 
 app.get('/resources/:resource', (req, res) => {
     res.status(200);
@@ -110,7 +401,7 @@ app.use((req, res, next) => {
   // If the request accepts HTML (browser), serve index.html fallback
   console.log(req.path)
   if (req.accepts('html')) {
-    res.sendFile(__dirname + '/resources/index.html');
+    res.sendFile(__dirname + '/resources/' + defaultMapping);
   } else {
     next();
   }

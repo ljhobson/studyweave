@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="resources/styles.css"/>
   <script type="text/javascript" src="resources/script.js" defer></script>
   <script type="text/javascript" src="resources/auth-script.js" defer></script>
+  <script type="text/javascript" src="resources/profile-script.js" defer></script>
 </head>
 <body>
   <div class="container">
@@ -15,8 +16,11 @@
       <nav class="nav"></nav>
     </aside>
     <main class="main-content">
-      <h2>🚧 In the works 🚧</h2>
-      <p>This feature has not been implemented yet.</p>
+      <form id="uploadForm">
+		<input type="file" id="jsonFile" accept=".json" required>
+		<button type="submit">Upload</button>
+	  </form>
+	  <div class="my-curricula"></div>
     </main>
   </div>
 </body>
