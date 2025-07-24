@@ -138,6 +138,16 @@ h2 {
 	cursor: pointer;
 }
 
+.card {
+	background-color: #9db;
+	color: #444;
+	border: none;
+	border-radius: 6px;
+	cursor: pointer;
+	padding: 30px;
+	margin: 5px;
+}
+
 .input {
 	padding: 5px;
 	margin: 5px;

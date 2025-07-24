@@ -1,8 +1,5 @@
-document.getElementById('uploadForm').addEventListener('submit', async function (e) {
-  e.preventDefault();
-
-  const fileInput = document.getElementById('jsonFile');
-  const file = fileInput.files[0];
+async function uploadFile(file) {
+  
   if (!file) return;
 
   // Read file text first
@@ -20,7 +17,7 @@ document.getElementById('uploadForm').addEventListener('submit', async function 
 //  const result = await response.text();
 //  document.getElementById('status').innerText = result;
   window.location.href = '/profile';
-});
+};
 
 
 if (window.location.pathname === "/profile") {
@@ -32,7 +29,7 @@ if (window.location.pathname === "/profile") {
 		
 		var content = "";
 		for (var i = 0; i < res.length; i++) {
-			content += `<div>${res[i].filename}</div>`;
+			content += `<div class="card">${res[i].filename}</div>`;
 		}
 		document.getElementsByClassName("my-curricula")[0].innerHTML = content;
 	}

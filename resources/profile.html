@@ -16,10 +16,11 @@
       <nav class="nav"></nav>
     </aside>
     <main class="main-content">
-      <form id="uploadForm">
-		<input type="file" id="jsonFile" accept=".json" required>
-		<button type="submit">Upload</button>
-	  </form>
+      <h2>My Curricula</h2>
+	  <div class="">
+		<button class="btn upload-btn" onclick="document.getElementById('jsonFile').click()">Upload</button>
+		<input type="file" id="jsonFile" style="display: none;" onchange="uploadFile(this.files[0])">
+	  </div>
 	  <div class="my-curricula"></div>
     </main>
   </div>

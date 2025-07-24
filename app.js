@@ -225,16 +225,15 @@ function insertHTML(data, pattern, content) {
 function getAttributes(element) {
   element = element.trim();
 
-  // Get string between '<' and '>' (the opening tag)
   const openTagStart = element.indexOf('<');
   const openTagEnd = element.indexOf('>');
-  if (openTagStart === -1 || openTagEnd === -1) return {};
+  const closeTagStart = element.indexOf('</');
+
+  if (openTagStart === -1 || openTagEnd === -1 || closeTagStart === -1) return {};
 
   const openTag = element.slice(openTagStart + 1, openTagEnd).trim();
-
-  // Remove tag name (e.g., 'a')
-  const parts = openTag.split(/\s+/); // still OK to split by space
-  parts.shift(); // remove the tag name
+  const parts = openTag.split(/\s+/);
+  parts.shift(); // remove the tag name (e.g., 'a')
 
   const attrs = {};
   for (const part of parts) {
@@ -244,19 +243,28 @@ function getAttributes(element) {
     }
   }
 
+  // Extract content between opening and closing tag
+  const innerContent = element.slice(openTagEnd + 1, closeTagStart).trim();
+  attrs.content = `"${innerContent}"`; // wrap in quotes for consistency
+
   return attrs;
 }
 
 function buildElementFromAttributes(attrs) {
   let attrString = '';
+  let content = '';
 
   for (const key in attrs) {
     if (attrs.hasOwnProperty(key)) {
-      attrString += ` ${key}=${attrs[key]}`;
+      if (key === 'content') {
+        content = attrs[key].replace(/^"|"$/g, ''); // remove surrounding quotes
+      } else {
+        attrString += ` ${key}=${attrs[key]}`;
+      }
     }
   }
 
-  return `<a${attrString}></a>`;
+  return `<a${attrString}>${content}</a>`;
 }
 
 function isLoggedIn(req) {
@@ -307,6 +315,12 @@ for (var key in mappings) {
 			for (var i = 0; i < navItems.length; i++) {
 				var item = navItems[i];
 				var attributes = getAttributes(item);
+				if (attributes.href) {
+					if (attributes.href.slice(1, -1) === req.path) {
+						attributes.class = '"active"';
+						item = buildElementFromAttributes(attributes);
+					}
+				}
 				if ("noauth" in attributes) {
 					if (!loggedIn) {
 						navContent += item;
