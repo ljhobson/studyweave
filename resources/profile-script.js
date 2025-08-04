@@ -19,6 +19,10 @@ async function uploadFile(file) {
   window.location.href = '/profile';
 };
 
+function openProject(projectId) {
+	window.location.href = '/view/' + projectId;
+}
+
 
 if (window.location.pathname === "/profile") {
 	window.onload = async function(event) {
@@ -27,10 +31,15 @@ if (window.location.pathname === "/profile") {
 		});
 		var res = await response.json();
 		
-		var content = "";
+		var content = `<div class="cards-container">`;
 		for (var i = 0; i < res.length; i++) {
-			content += `<div class="card">${res[i].filename}</div>`;
+			var item = res[i];
+			if (!item.description) {
+				item.description = "<i>no description</i>";
+			}
+			content += `<div class="card" onclick="openProject(${item.id})"><b>${item.filename}</b><p>${item.description}</p></div>`;
 		}
+		content += "</div>";
 		document.getElementsByClassName("my-curricula")[0].innerHTML = content;
 	}
 }

@@ -23,31 +23,41 @@ var xScaleFactor = 2;
 
 function importCurriculum(file) {
 	if (!file) {
-		return;
+		return Promise.reject("No file provided");
 	}
 	
-	const reader = new FileReader();
-
-	reader.onload = function(event) {
-		var res = JSON.parse(event.target.result);
-		nodeData = res.nodes;
-		nodeStyle = res.nodeStyle;
-		makeBidirectional(nodeData);
-		nodeMap = {};
-		nodeData.forEach(n => updateNodeDimensions(n));
-		nodeData.forEach(n => nodeMap[n.id] = n);
-		selected = 0;
-		displayNodesAround(selected, degree);
-		console.log(nodeData);
-		console.log("import complete");
-//		selectedNode = nodes[0];
-//		centerNode(selectedNode);
-//		positionConnections(selectedNode, 1);
-	};
-	
 	console.log("attempting to import");
-	
-	reader.readAsText(file);
+	return new Promise((resolve) => {
+		const reader = new FileReader();
+		
+		reader.onload = function(event) {
+			try {
+				var res = JSON.parse(event.target.result);
+				nodeData = res.nodes;
+				nodeStyle = res.nodeStyle;
+				makeBidirectional(nodeData);
+				nodeMap = {};
+				nodeData.forEach(n => updateNodeDimensions(n));
+				nodeData.forEach(n => nodeMap[n.id] = n);
+				selected = 0;
+				displayNodesAround(selected, degree);
+				console.log(nodeData);
+				console.log("import complete");
+				resolve(true); // RESOLVED
+		//		selectedNode = nodes[0];
+		//		centerNode(selectedNode);
+		//		positionConnections(selectedNode, 1);
+			} catch (err) {
+				resolve(false); // REJECT
+			}
+		};
+		
+		reader.onerror = function() {
+			resolve(false); // REJECT
+		};
+		
+		reader.readAsText(file);
+	});
 
 //	const formData = new FormData();
 //	formData.append("myFile", file);
@@ -86,40 +96,9 @@ function resize() {
 //	canvas.height = window.innerHeight;
 }
 
-var nodeData = [
-  { id: 0, text: "Binary & Data Representation", connections: [1, 2] },
-  { id: 1, text: "Logic Gates", connections: [0, 3] },
-  { id: 2, text: "Number Systems", connections: [0, 4] },
-  { id: 3, text: "Boolean Algebra", connections: [1, 5] },
-  { id: 4, text: "Data Types", connections: [2, 6, 7] },
-  { id: 5, text: "Computer Architecture", connections: [3, 8] },
-  { id: 6, text: "Variables & Memory", connections: [4, 9] },
-  { id: 7, text: "File Storage & Encoding", connections: [4, 10] },
-  { id: 8, text: "CPU & Instruction Cycle", connections: [5, 9, 11] },
-  { id: 9, text: "Low-Level Programming", connections: [6, 8, 12] },
-  { id: 10, text: "Operating Systems", connections: [7, 11, 13] },
-  { id: 11, text: "Virtual Memory & Processes", connections: [8, 10] },
-  { id: 12, text: "Compilers & Interpreters", connections: [9, 14] },
-  { id: 13, text: "Concurrency & Threads", connections: [10, 15] },
-  { id: 14, text: "Programming Languages", connections: [12, 16, 17] },
-  { id: 15, text: "Parallel Computing", connections: [13, 18] },
-  { id: 16, text: "Data Structures", connections: [14, 17, 19] },
-  { id: 17, text: "Algorithms", connections: [14, 16, 20] },
-  { id: 18, text: "Distributed Systems", connections: [15, 21] },
-  { id: 19, text: "Object-Oriented Programming", connections: [16, 22] },
-  { id: 20, text: "Algorithm Complexity", connections: [17, 23] },
-  { id: 21, text: "Cloud Computing", connections: [18, 24] },
-  { id: 22, text: "Software Design Patterns", connections: [19, 25] },
-  { id: 23, text: "Search & Sorting", connections: [20] },
-  { id: 24, text: "Web Development", connections: [21, 26] },
-  { id: 25, text: "Software Engineering", connections: [22, 27] },
-  { id: 26, text: "Client-Server Architecture", connections: [24, 28] },
-  { id: 27, text: "Testing & Debugging", connections: [25, 29] },
-  { id: 28, text: "Networking Protocols", connections: [26, 30] },
-  { id: 29, text: "Version Control", connections: [27] },
-  { id: 30, text: "Cybersecurity", connections: [28] }
-];
-resize();
+var nodeData = [];
+
+
 function updateNodeDimensions(node) {
 	node.x = canvas.width/(2 * xScaleFactor) + Math.random();
 	node.y = canvas.height/(2) + Math.random();
@@ -131,9 +110,6 @@ function updateNodeDimensions(node) {
 	}
 }
 
-for (var i = 0; i < nodeData.length; i++) {
-	updateNodeDimensions(nodeData[i]);
-}
 
 
 function generateNodeData() {
@@ -157,7 +133,7 @@ function displayNodesAround(id, degree) {
 	searched = [id];
 	
 	while (stack.length > 0) {
-		var current = stack.pop();
+		var current = stack.shift();
 		var subject = current.node;
 		var distance = current.distance;
 		var parentId = current.parentId; // for the re arranging if needed
@@ -195,7 +171,8 @@ function displayNodesAround(id, degree) {
 			}
 		}
 		
-		nodes[i].size = Math.floor(5 + count * 5);
+		nodes[i].size = Math.floor(5 + count * 5 - nodes[i].degree * distanceScalingFactor);
+		nodes[i].size = Math.max(5, nodes[i].size);
 //		nodes[i].x = nodeData[id].x;
 //		nodes[i].y = nodeData[id].y;
 	}
@@ -204,29 +181,40 @@ function displayNodesAround(id, degree) {
 	
 }
 
-window.onload = function(event) {
+window.onload = async function(event) {
 	resize();
-	//generateNodeData();
+	var projectId = window.location.pathname.split("/")[2];
+	const response = await fetch('/curricula/' + projectId, {
+		method: 'GET',
+	});
+	var res = await response.blob();
+	
+	var worked = await importCurriculum(res);
+	if (worked) {
+		update();
+	} else {
+		window.location.href = "/";
+	}
+	
+}
+
+function loadNodeData() {
+	for (var i = 0; i < nodeData.length; i++) {
+		updateNodeDimensions(nodeData[i]);
+	}
+	
 	makeBidirectional(nodeData);
 	
 	displayNodesAround(selected, degree);
 	
-	console.log(nodes);
-	
-//	var size = nodes.length;
-//	for (var i = 0; i < size; i++) {
-//		for (var j = 0; j < Math.floor(Math.random()*10); j++) {
-//			nodes[i].size += 5;
-//			nodes.push( { x: Math.random()*canvas.width, y: Math.random()*canvas.height, size: 5, connections: [i] } )
-//		}
-//	}
-	
 	update();
 }
 
-var degree = 4;
+var boundNodes = false;
+var distanceScalingFactor = 0;
+var degree = 6;
 var transDegree = 2;
-renderTransparent = true;
+var renderTransparent = true;
 var dotsOnFinal = true;
 var selected = 0;
 var moving = false;
@@ -475,7 +463,9 @@ function update() {
 			subject.x += dx;
 			subject.y += dy;
 			
-			bound(subject);
+			if (boundNodes) {
+				bound(subject);
+			}
 		}
 			
 		if (moving !== false && moving === i) {

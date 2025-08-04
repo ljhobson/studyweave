@@ -13,7 +13,7 @@ const PORT = 3000;
 var mappings = {};
 mappings['/'] = 'index.html';
 mappings['/design'] = 'design.html';
-mappings['/view'] = 'view.html';
+mappings['/view/:id'] = 'view.html';
 mappings['/contribute'] = 'error.html';
 mappings['/wishlist'] = 'error.html';
 mappings['/login'] = 'login.html';
@@ -50,6 +50,7 @@ db.run(`CREATE TABLE IF NOT EXISTS user_files (
   user_id INTEGER,
   filename TEXT,
   filepath TEXT,
+  description TEXT,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY(user_id) REFERENCES users(id)
 )`);
@@ -193,7 +194,7 @@ app.get('/api/my-files', async (req, res) => {
   }
 
   db.all(
-    'SELECT id, filename, filepath, created_at FROM user_files WHERE user_id = ? ORDER BY created_at DESC',
+    'SELECT id, filename, filepath, description, created_at FROM user_files WHERE user_id = ? ORDER BY created_at DESC',
     [userId],
     (err, rows) => {
       if (err) {
@@ -303,9 +304,14 @@ function getUserIdFromSession(req) {
 for (var key in mappings) {
 	app.get(key, async (req, res) => {
 		var loggedInPromise = isLoggedIn(req); // start running in parallel
-		var activeTab = req.path;
+		var activeTab = "/" + req.path.split("/")[1];
 		try {
-			var data = await fs.promises.readFile(__dirname + "/resources/" + mappings[req.path], 'utf8');
+			var resPath = mappings[activeTab];
+			if (!resPath) {
+				resPath = mappings[activeTab + "/:id"];
+			}
+			console.log(resPath);
+			var data = await fs.promises.readFile(__dirname + "/resources/" + resPath, 'utf8');
 
 			var nav = await fs.promises.readFile(__dirname + "/resources/nav.html", 'utf8');
 			navItems = nav.split('\n');
@@ -316,7 +322,7 @@ for (var key in mappings) {
 				var item = navItems[i];
 				var attributes = getAttributes(item);
 				if (attributes.href) {
-					if (attributes.href.slice(1, -1) === req.path) {
+					if (attributes.href.slice(1, -1) === activeTab) {
 						attributes.class = '"active"';
 						item = buildElementFromAttributes(attributes);
 					}
@@ -350,6 +356,30 @@ for (var key in mappings) {
 app.get('/resources/:resource', (req, res) => {
     res.status(200);
     res.sendFile(__dirname + "/resources/" + req.params.resource);
+});
+
+app.get('/curricula/:id', async (req, res) => {
+	const userId = await getUserIdFromSession(req);
+	if (!userId) {
+		return res.status(401).json({ error: 'Unauthorized' });
+	}
+	
+	db.all(
+		'SELECT id, filename, filepath, created_at FROM user_files WHERE id = ? AND user_id = ? ORDER BY created_at DESC',
+		[req.params.id, userId],
+		(err, rows) => {
+			if (err || rows.length < 1) {
+				console.error('Error fetching user files:', err);
+				return res.status(500).json({ error: 'Database error' });
+			}
+			
+			console.log(rows[0]);
+			res.status(200);
+			res.sendFile(__dirname + "/" + rows[0].filepath);
+			
+		}
+	);
+	
 });
 
 app.get('/api/generate/:topic', (req, res) => {
