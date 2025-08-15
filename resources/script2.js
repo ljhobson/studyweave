@@ -18,6 +18,8 @@ var nodeStyle = {
   lineHeight: 20,
 };
 
+var selectedStyle = "#ff0";
+
 
 var xScaleFactor = 2;
 
@@ -41,6 +43,7 @@ function importCurriculum(file) {
 				nodeData.forEach(n => nodeMap[n.id] = n);
 				selected = 0;
 				displayNodesAround(selected, degree);
+				openSelectedMenu(selected);
 				console.log(nodeData);
 				console.log("import complete");
 				resolve(true); // RESOLVED
@@ -221,14 +224,15 @@ var moving = false;
 var mouse = {};
 
 window.onmousemove = function(event) {
-	mouse.x = event.layerX;
-	mouse.y = event.layerY;
+	mouse.x = event.clientX - Math.ceil(document.getElementsByClassName("sidebar")[0]?.getBoundingClientRect().width || 0);
+	mouse.y = event.clientY;
 }
 
-window.onmousedown = function(event) {
+canvas.onmousedown = function(event) {
 	mouse.down = true;
-	mouse.x = event.layerX;
-	mouse.y = event.layerY;
+	mouse.x = event.clientX - Math.ceil(document.getElementsByClassName("sidebar")[0]?.getBoundingClientRect().width || 0);
+	mouse.y = event.clientY;
+	console.log(event);
 	
 	for (var i = 0; i < nodes.length; i++) {
 		if (!nodes[i]) { continue }; // skip over empty ones
@@ -240,6 +244,7 @@ window.onmousedown = function(event) {
 			moving = i;
 			selected = i;
 			displayNodesAround(selected, degree);
+			openSelectedMenu(selected);
 			
 			return;
 			break;
@@ -248,16 +253,29 @@ window.onmousedown = function(event) {
 	
 	moving = false;
 	selected = false;
+	closeSelectedMenu();
 }
 
 window.onmouseup = function(event) {
 	mouse.down = false;
-	mouse.x = event.layerX;
-	mouse.y = event.layerY;
+	mouse.x = event.clientX - Math.ceil(document.getElementsByClassName("sidebar")[0]?.getBoundingClientRect().width || 0);
+	mouse.y = event.clientY;
 	
 	moving = false;
 }
 
+function openSelectedMenu(i) {
+	document.getElementById("selectedName").value = nodes[i].text;
+	document.getElementsByClassName("selected")[0].style.display = "inline-block";
+}
+
+function closeSelectedMenu() {
+	document.getElementsByClassName("selected")[0].style.display = "none";
+}
+
+function updateSelected() {
+	nodeData[selected].text = document.getElementById("selectedName").value;
+}
 
 
 function makeBidirectional(nodes) {
@@ -325,13 +343,14 @@ function drawNode(node) {
 	drawRoundedRect(ctx, renderX-textWidth/2-node.size/2, node.y-node.size/2-5, node.width, node.height, 5);
 	ctx.fill();
 	ctx.shadowBlur = 0;
-	ctx.stroke();
-
 	if (selected === node.id) {
-		ctx.lineWidth = 2;
+		ctx.strokeStyle = selectedStyle;
+		ctx.lineWidth = 4;
 		ctx.stroke();
-		ctx.lineWidth = 1;
+		ctx.strokeStyle = nodeStyle.strokeColor;
+		ctx.lineWidth = 2;
 	}
+	ctx.stroke();
 
 	ctx.fillStyle = "#999";
 	ctx.textAlign = "left";

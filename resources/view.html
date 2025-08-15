@@ -21,6 +21,10 @@
 			<input type="file" id="fileInput" style="display: none;" onchange="importCurriculum(this.files[0])" -->
 			
 			<button class="btn" onclick="">Add</button>
+			<div class="selected" style="display: none;">
+				<input id="selectedName" oninput="updateSelected()"></input>
+				<textarea id="selectedAttributes"></textarea>
+			</div>
 		</div>
 	</div>
   </div>

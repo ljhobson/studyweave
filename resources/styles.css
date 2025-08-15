@@ -149,6 +149,8 @@ h2 {
 	border: none;
 	border-radius: 6px;
 	cursor: pointer;
+	
+	margin-bottom: auto;
 }
 
 .cards-container {
@@ -238,4 +240,50 @@ h2 {
 .login-btn:hover {
   background-color: #2bc662;
 }
+
+.selected {
+	max-width: 400px;
+	background-color: white;
+	padding: 20px;
+	border-radius: 12px;
+	box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+	
+	display: inline-block;
+}
+
+#selectedName {
+	border: 2px dotted #999;
+	border-radius: 5px;
+	outline-color: #69e;
+	font-size: 24px;
+	width: 100%;
+	margin-bottom: 10px;
+}
+
+#selectedAttributes {
+	width: 360px;
+	resize: none;
+	height: 200px;
+	
+	border: 2px dotted #999;
+	border-radius: 5px;
+	outline-color: #69e;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

@@ -8,7 +8,7 @@ var crypto = require('crypto');
 require('dotenv').config();
 
 const app = express();
-const PORT = 80;
+const PORT = 3000;
 
 var mappings = {};
 mappings['/'] = 'index.html';
