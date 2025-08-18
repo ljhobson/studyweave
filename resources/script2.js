@@ -213,6 +213,9 @@ function loadNodeData() {
 	update();
 }
 
+
+var temperature = 1;
+var cooling = 0.99;
 var boundNodes = false;
 var distanceScalingFactor = 0;
 var degree = 6;
@@ -245,6 +248,7 @@ canvas.onmousedown = function(event) {
 			selected = i;
 			displayNodesAround(selected, degree);
 			openSelectedMenu(selected);
+			temperature = 1;
 			
 			return;
 			break;
@@ -438,6 +442,7 @@ function mag(a, b) {
 
 function update() {
 	resize();
+	temperature *= cooling;
 	
 	for (var i = 0; i < nodes.length; i++) {
 		if (!nodes[i]) { continue }; // skip over empty ones
@@ -479,8 +484,8 @@ function update() {
 			dx += subject.size*(canvas.width/(2 * xScaleFactor) - subject.x) / (100000/speed);
 			dy += subject.size*(canvas.height/2 - subject.y) / (100000/speed);
 			
-			subject.x += dx;
-			subject.y += dy;
+			subject.x += dx*temperature;
+			subject.y += dy*temperature;
 			
 			if (boundNodes) {
 				bound(subject);

@@ -20,9 +20,14 @@
 			<!-- button class="btn" onclick="document.getElementById('fileInput').click()">Import</button>
 			<input type="file" id="fileInput" style="display: none;" onchange="importCurriculum(this.files[0])" -->
 			
-			<button class="btn" onclick="">Add</button>
+			<button class="add-btn btn" onclick="">Add</button>
 			<div class="selected" style="display: none;">
 				<input id="selectedName" oninput="updateSelected()"></input>
+				<textarea id="selectedAttributes"></textarea>
+			</div>
+			
+			<div class="keys" style="display: inline-block;">
+				<h2>Keys</h2>
 				<textarea id="selectedAttributes"></textarea>
 			</div>
 		</div>
