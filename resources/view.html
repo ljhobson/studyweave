@@ -11,8 +11,8 @@
 <body>
   <div class="container">
     <aside class="sidebar">
-      <h1 class="title"><a href="/">StudyWeave</a></h1>
-      <nav class="nav"></nav>
+		<h1 class="title"><a href="/">StudyWeave</a></h1>
+		<nav class="nav"></nav>
     </aside>
     <div class="content">
 		<canvas id="canvas">Your browser does not support HTML5 canvas.</canvas>
@@ -21,14 +21,17 @@
 			<input type="file" id="fileInput" style="display: none;" onchange="importCurriculum(this.files[0])" -->
 			
 			<button class="add-btn btn" onclick="">Add</button>
-			<div class="selected" style="display: none;">
-				<input id="selectedName" oninput="updateSelected()"></input>
-				<textarea id="selectedAttributes"></textarea>
+			<div id="selected" class="selected tab-controls" style="display: none;">
+				<h3>Properties</h3>
+				<div id="selected-content">
+					<input id="selectedName" oninput="updateSelected()"></input>
+					<a>Tags: [</a><input id="selected-tags" oninput="updateSelected()"></input><a>]</a>
+				</div>
 			</div>
 			
-			<div class="keys" style="display: inline-block;">
-				<h2>Keys</h2>
-				<textarea id="selectedAttributes"></textarea>
+			<div id="keys" class="keys tab-controls" style="display: inline-block;">
+				<h3>Keys</h3>
+				<div id="keys-content"></div>
 			</div>
 		</div>
 	</div>

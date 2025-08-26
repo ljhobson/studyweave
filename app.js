@@ -383,10 +383,7 @@ app.get('/curricula/:id', async (req, res) => {
 });
 
 app.get('/api/generate/:topic', (req, res) => {
-console.log("key:");
-	console.log(process.env.GEMINI_API_KEY);
-	
-	const apiKey = "AIzaSyCX1YH07-h1qKuKq1X1az2RkdLAH9yA_uI";
+	const apiKey = process.env.GEMINI_API_KEY;
 
 	const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 	
@@ -425,10 +422,17 @@ console.log("key:");
 		.replace(/```json|```/g, '')
 		.trim();
 		var nodes = JSON.parse(cleaned);
+		// insert keyValues for testing
+		for (var i = 0; i < nodes.length; i++) {
+			nodes[i].tags = [["idea", "skill", "practical", "equation/law", "literacy/numeracy", "SLO"][i%6]];
+		}
+		// end keyValues testing
 		res.status(200);
 		var content = JSON.stringify({
 			nodeStyle: {"fillColor":"hsl(" + Math.round(Math.random()*360) + ", 70%, 35%)","strokeColor":"#1c5980","textColor":"#fff","font":"16px 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif","shadowColor":"rgba(0,0,0,0.15)","shadowBlur":8,"borderRadius":8,"padding":12,"maxWidth":180,"lineHeight":20},
-			nodes: nodes
+			nodes: nodes,
+			tags: ["idea", "skill", "practical", "equation/law", "literacy/numeracy", "SLO"],
+			tagColours: ["#f93","#993","#39f","#f39","#399","#93f"]
 		});
 		
 		res.setHeader('Content-Type', 'text/json');

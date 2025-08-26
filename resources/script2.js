@@ -37,6 +37,11 @@ function importCurriculum(file) {
 				var res = JSON.parse(event.target.result);
 				nodeData = res.nodes;
 				nodeStyle = res.nodeStyle;
+				if (res.tags) {
+					tags = res.tags;
+					tagColours = res.tagColours;
+				}
+				updateKeys();
 				makeBidirectional(nodeData);
 				nodeMap = {};
 				nodeData.forEach(n => updateNodeDimensions(n));
@@ -79,6 +84,39 @@ function importCurriculum(file) {
 //	.catch(error => {
 //		console.error("Error uploading file:", error);
 //	});
+}
+
+var tags = [];
+var tagColours = [];
+
+function updateKeys() {
+	var keys = document.getElementById("keys-content");
+	
+	var content = "";
+	for (var i = 0; i < tags.length; i++) {
+		content +=`<div style="color:${tagColours[i]};"><input type="checkbox" id="tag-${tags[i]}" checked onchange="updateTag('${tags[i]}')"></input> ${tags[i]}</div>`;
+	}
+	if (content === "") {
+		content += "<i style='color:#666; font-size:14px;'>There are no tags in this curricula.</i>";
+	}
+	keys.innerHTML = content;
+}
+
+function updateTag(tag) {
+	let checkbox = document.getElementById("tag-" + tag);
+	for (var j = 0; j < nodes.length; j++) {
+		if (nodes[j].tags.includes(tag)) {
+			nodes[j].isDot = !checkbox.checked;
+		} else {
+			
+		}
+	}
+}
+
+function updateTags() {
+	for (var i = 0; i < tags.length; i++) {
+		updateTag(tags[i]);
+	}
 }
 
 function generateTopic() {
@@ -182,9 +220,34 @@ function displayNodesAround(id, degree) {
 	
 	nodes[selected].size += 20;
 	
+	updateTags();
+	
+}
+
+function createControls() { // most OP function I have ever written - could be more OP if change it to classes instead of ID's
+	var tabs = document.getElementsByClassName("tab-controls");
+	for (let i = 0; i < tabs.length; i++) {
+		let tab = tabs[i];
+		let minimize = document.createElement("a");
+		tab.appendChild(minimize);
+		minimize.classList.add("min-btn");
+		document.getElementById(tab.id + "-content").style.display = "inline";
+		minimize.onclick = function(event) {
+			if (document.getElementById(tab.id + "-content").style.display === "none") {
+				document.getElementById(tab.id + "-content").style.display = "inline";
+				minimize.classList.remove("max-btn");
+			} else {
+				document.getElementById(tab.id + "-content").style.display = "none";
+				minimize.classList.add("max-btn");
+			}
+			
+		};
+	}
+	
 }
 
 window.onload = async function(event) {
+	createControls();
 	resize();
 	var projectId = window.location.pathname.split("/")[2];
 	const response = await fetch('/curricula/' + projectId, {
@@ -270,6 +333,7 @@ window.onmouseup = function(event) {
 
 function openSelectedMenu(i) {
 	document.getElementById("selectedName").value = nodes[i].text;
+	document.getElementById("selected-tags").value = nodes[i].tags;
 	document.getElementsByClassName("selected")[0].style.display = "inline-block";
 }
 
@@ -279,6 +343,7 @@ function closeSelectedMenu() {
 
 function updateSelected() {
 	nodeData[selected].text = document.getElementById("selectedName").value;
+	nodeData[selected].tags = Array(document.getElementById("selected-tags").value);
 }
 
 
@@ -323,6 +388,14 @@ function drawNode(node) {
 	var renderX = node.x * xScaleFactor;
 	ctx.fillStyle = nodeStyle.fillColor;
 	ctx.strokeStyle = nodeStyle.strokeColor;
+	if (node.tags) {
+		if (node.tags.length > 0) {
+			ctx.fillStyle = tagColours[tags.indexOf(node.tags[0])];
+		} else {
+			ctx.fillStyle = "#999"; // default grey
+		}
+		ctx.strokeStyle = "#444";
+	}
 	ctx.lineWidth = 2;
 	ctx.shadowColor = nodeStyle.shadowColor;
 	ctx.shadowBlur = nodeStyle.shadowBlur;
