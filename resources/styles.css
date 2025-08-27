@@ -307,6 +307,25 @@ h2 {
 	display: none;
 }
 
+.top-right {
+	position: absolute;
+	top: 10px;
+	right: 0px;
+}
+
+.save-btn {
+	background-color: #1553db;
+}
+
+.saved {
+	background-color: #555;
+	cursor: default;
+}
+
+.saved:hover {
+	background-color: #555;
+}
+
 .min-btn {
 	--s: var(--size);
 	display:inline-block;

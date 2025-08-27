@@ -52,6 +52,7 @@ db.run(`CREATE TABLE IF NOT EXISTS user_files (
   filepath TEXT,
   description TEXT,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  last_updated TEXT DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY(user_id) REFERENCES users(id)
 )`);
 
@@ -173,8 +174,8 @@ app.post('/upload-json', async (req, res) => {
     }
     // Insert into user_files table
     db.run(
-      `INSERT INTO user_files (user_id, filename, filepath) VALUES (?, ?, ?)`,
-      [userId, filename, filePath],
+      `INSERT INTO user_files (user_id, filename, filepath, last_updated) VALUES (?, ?, ?, ?)`,
+      [userId, filename, filePath, Date.now()],
       function (dbErr) {
         if (dbErr) {
           console.error('Failed to save file info to DB:', dbErr);
@@ -375,11 +376,65 @@ app.get('/curricula/:id', async (req, res) => {
 			
 			console.log(rows[0]);
 			res.status(200);
+			res.setHeader('Content-Disposition', 'attachment; filename="' + rows[0].filename + '"')
 			res.sendFile(__dirname + "/" + rows[0].filepath);
 			
 		}
 	);
 	
+});
+
+app.post('/curricula/:id', async (req, res) => {
+	const filename = req.headers['x-filename'];
+	if (!filename) {
+		return res.status(400).send('Missing filename header');
+	}
+	
+	// Get user_id from session
+	const userId = await getUserIdFromSession(req);
+	if (!userId) {
+		return res.status(401).send('Unauthorized: No valid session');
+	}
+
+	const uploadDir = "user-resources/";
+	if (!fs.existsSync(uploadDir)) {
+		fs.mkdirSync(uploadDir);
+	}
+
+	db.all(
+		'SELECT filepath FROM user_files WHERE id = ? AND user_id = ? ORDER BY created_at DESC',
+		[req.params.id, userId],
+		(err, rows) => {
+			if (err || rows.length < 1) {
+				console.error('Error fetching user files:', err);
+				return res.status(500).json({ error: 'Database error' });
+			}
+			
+			console.log(rows[0]);
+			const filePath = rows[0].filepath;
+			fs.writeFile(filePath, JSON.stringify(req.body), (err) => {
+				if (err) {
+					console.error('Failed to save file:', err);
+					return res.status(500).send('Failed to save file');
+				}
+				// Update the date - update the last user to update it as well at some point
+				db.run(
+					`UPDATE user_files SET last_updated = ? WHERE id = ?`,
+					[Date.now(), req.params.id],
+					function (dbErr) {
+						if (dbErr) {
+							console.error('Failed to save file info to DB:', dbErr);
+							return res.status(500).send('File saved but failed to save metadata');
+						}
+						
+						return res.status(200).send('File saved');
+						res.send('File changed and saved as ' + filePath);
+					}
+				);
+			});
+		}
+	);
+
 });
 
 app.get('/api/generate/:topic', (req, res) => {

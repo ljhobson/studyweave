@@ -23,6 +23,7 @@ var selectedStyle = "#ff0";
 
 var xScaleFactor = 2;
 
+var filename = null;
 function importCurriculum(file) {
 	if (!file) {
 		return Promise.reject("No file provided");
@@ -246,6 +247,7 @@ function createControls() { // most OP function I have ever written - could be m
 	
 }
 
+var filename = null;
 window.onload = async function(event) {
 	createControls();
 	resize();
@@ -255,13 +257,58 @@ window.onload = async function(event) {
 	});
 	var res = await response.blob();
 	
+	// get file name (sus depending on filename content)
+	const disposition = response.headers.get('Content-Disposition');
+	filename = 'download.json'; // fallback
+
+	if (disposition && disposition.includes('filename=')) {
+		const match = disposition.match(/filename="?(.+?)"?$/);
+		if (match && match[1]) filename = match[1];
+	}
+	
+	
 	var worked = await importCurriculum(res);
 	if (worked) {
 		update();
+		setSaveStatus(true);
 	} else {
 		window.location.href = "/";
 	}
 	
+}
+
+function setSaveStatus(saved) {
+	if (saved) {
+		if (!document.getElementById("save-btn").classList.contains("saved")) {
+			document.getElementById("save-btn").classList.add("saved");
+		}
+		document.getElementById("save-btn").innerText = "Saved";
+	} else {
+		document.getElementById("save-btn").classList.remove("saved");
+		document.getElementById("save-btn").innerText = "Save";
+	}
+}
+
+async function save() {
+	var curricula = {};
+	curricula.nodes = nodeData;
+	curricula.nodeStyle = nodeStyle;
+	curricula.tags = tags;
+	curricula.tagColours = tagColours;
+	
+	var projectId = window.location.pathname.split("/")[2];
+	const response = await fetch('/curricula/' + projectId, {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json',
+			'x-filename': filename
+		},
+		body: JSON.stringify(curricula)
+	});
+	
+	if ([200, 500].includes(response.status)) { // looks bad, but is algs dw
+		setSaveStatus(true);
+	}
 }
 
 function loadNodeData() {
@@ -344,6 +391,7 @@ function closeSelectedMenu() {
 function updateSelected() {
 	nodeData[selected].text = document.getElementById("selectedName").value;
 	nodeData[selected].tags = Array(document.getElementById("selected-tags").value);
+	setSaveStatus(false);
 }
 
 
