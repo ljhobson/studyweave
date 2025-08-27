@@ -438,7 +438,11 @@ function drawNode(node) {
 	ctx.strokeStyle = nodeStyle.strokeColor;
 	if (node.tags) {
 		if (node.tags.length > 0) {
-			ctx.fillStyle = tagColours[tags.indexOf(node.tags[0])];
+			var colIndex = tags.indexOf(node.tags[0]);
+			ctx.fillStyle = tagColours[colIndex];
+			if (colIndex === -1) {
+				ctx.fillStyle = "#999"; // default grey
+			}
 		} else {
 			ctx.fillStyle = "#999"; // default grey
 		}
