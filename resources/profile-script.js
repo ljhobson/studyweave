@@ -43,3 +43,11 @@ if (window.location.pathname === "/profile") {
 		document.getElementsByClassName("my-curricula")[0].innerHTML = content;
 	}
 }
+
+async function createNew() {
+	const response = await fetch('/api/new-curricula', {
+		method: 'POST',
+	});
+	var projectId = (await response.json()).id;
+	openProject(projectId);
+}

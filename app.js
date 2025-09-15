@@ -384,6 +384,56 @@ app.get('/curricula/:id', async (req, res) => {
 	
 });
 
+app.post('/api/new-curricula', async (req, res) => {
+	
+	// Get user_id from session
+	const userId = await getUserIdFromSession(req);
+	if (!userId) {
+		return res.status(401).send('Unauthorized: No valid session');
+	}
+	
+	const uploadDir = "user-resources/";
+	if (!fs.existsSync(uploadDir)) {
+		fs.mkdirSync(uploadDir);
+	}
+	
+	const filename = "new curricula.json";
+	const filePath = uploadDir + Date.now() + '-' + filename;
+
+	const emptyCurriculumPath = 'resources/empty_curriculum.json';
+
+	// Read the contents of empty_curriculum.json
+	fs.readFile(emptyCurriculumPath, 'utf8', (readErr, data) => {
+		if (readErr) {
+			console.error('Failed to read empty curriculum file:', readErr);
+			return res.status(500).send('Server error: could not read template');
+		}
+
+		// Write contents to the new file
+		fs.writeFile(filePath, data, (writeErr) => {
+			if (writeErr) {
+				console.error('Failed to save file:', writeErr);
+				return res.status(500).send('Failed to save file');
+			}
+
+			// Insert into user_files table
+			db.run(
+				`INSERT INTO user_files (user_id, filename, filepath, last_updated) VALUES (?, ?, ?, ?)`,
+				[userId, filename, filePath, Date.now()],
+				function (dbErr) {
+					if (dbErr) {
+						console.error('Failed to save file info to DB:', dbErr);
+						return res.status(500).send('File saved but failed to save metadata');
+					}
+					
+					res.status(200).send({ id: this.lastID });
+				}
+			);
+		});
+	});
+
+});
+
 app.post('/curricula/:id', async (req, res) => {
 	const filename = req.headers['x-filename'];
 	if (!filename) {

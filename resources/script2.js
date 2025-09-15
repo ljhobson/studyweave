@@ -48,8 +48,10 @@ function importCurriculum(file) {
 				nodeData.forEach(n => updateNodeDimensions(n));
 				nodeData.forEach(n => nodeMap[n.id] = n);
 				selected = 0;
-				displayNodesAround(selected, degree);
-				openSelectedMenu(selected);
+				if (nodeData.length > 0) {
+					displayNodesAround(selected, degree);
+					openSelectedMenu(selected);
+				}
 				console.log(nodeData);
 				console.log("import complete");
 				resolve(true); // RESOLVED
