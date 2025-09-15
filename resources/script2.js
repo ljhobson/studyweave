@@ -108,7 +108,7 @@ function updateKeys() {
 function updateTag(tag) {
 	let checkbox = document.getElementById("tag-" + tag);
 	for (var j = 0; j < nodes.length; j++) {
-		if (nodes[j].tags.includes(tag)) {
+		if (nodes[j] & nodes[j].tags.includes(tag)) {
 			nodes[j].isDot = !checkbox.checked;
 		} else {
 			
@@ -323,6 +323,17 @@ function loadNodeData() {
 	displayNodesAround(selected, degree);
 	
 	update();
+}
+
+function addNode(x, y) {
+	if (!(x != undefined && y != undefined)) {
+		x = canvas.width / 4;
+		y = canvas.height / 2;
+	}
+	nodeData.push( { id: nodeData.length, text: "new node", x: x, y: y, size: 5, connections: [], tags: [] });
+	selected = nodeData.length-1;
+	displayNodesAround(selected, degree);
+	openSelectedMenu(selected);
 }
 
 
