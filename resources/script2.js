@@ -423,7 +423,7 @@ function openSelectedMenu(i) {
 	document.getElementById("selected-tags").value = nodes[i].tags;
 	document.getElementsByClassName("selected")[0].style.display = "inline-block";
 	var cons = "";
-	for (let j = 0; j < nodeData[i].connections.length && j < 5; j++) {
+	for (let j = 0; j < nodeData[i].connections.length && j < 500000; j++) {
 		var connId = nodeData[i].connections[j];
 		if (connId === i) {
 			continue;
@@ -439,6 +439,10 @@ function openSelectedMenu(i) {
 		
 		cons += `<a class="node" onclick="removeConnection(${i}, ${connId})" style="background-color: ${colour};">${nodeData[connId].text}</a>`;
 	}
+	console.log(cons);
+	if (cons.length === 0) {
+		cons = "<i>There are no connections</i>"
+	}
 	document.getElementById("connections-current").innerHTML = cons;
 	var searchTerm = "";
 	var searchBar = document.getElementById("search-bar");
@@ -446,7 +450,7 @@ function openSelectedMenu(i) {
 		searchTerm = document.getElementById("search-bar").value;
 	}
 	cons = "";
-	for (let j = 0; j < nodeData.length && j < 50000; j++) {
+	for (let j = 0; j < nodeData.length && j < 500000; j++) {
 		if (j === i || nodeData[j].connections.includes(i)) {
 			continue;
 		}
@@ -465,6 +469,10 @@ function openSelectedMenu(i) {
 		}
 		
 		cons += `<a class="node" onclick="addConnection(${i}, ${j})" style="background-color: ${colour};">${nodeData[j].text}</a>`;
+	}
+	console.log(cons);
+	if (cons.length === 0) {
+		cons = "<i>There are no nodes to add</i>"
 	}
 	document.getElementById("connections-to-add").innerHTML = cons;
 }
