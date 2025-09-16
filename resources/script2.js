@@ -108,7 +108,7 @@ function updateKeys() {
 function updateTag(tag) {
 	let checkbox = document.getElementById("tag-" + tag);
 	for (var j = 0; j < nodes.length; j++) {
-		if (nodes[j] & nodes[j].tags.includes(tag)) {
+		if (nodes[j] && nodes[j].tags.includes(tag)) {
 			nodes[j].isDot = !checkbox.checked;
 		} else {
 			
@@ -327,13 +327,35 @@ function loadNodeData() {
 
 function addNode(x, y) {
 	if (!(x != undefined && y != undefined)) {
-		x = canvas.width / 4;
-		y = canvas.height / 2;
+		x = canvas.width / 4 + Math.random();
+		y = canvas.height / 2 + Math.random();
 	}
 	nodeData.push( { id: nodeData.length, text: "new node", x: x, y: y, size: 5, connections: [], tags: [] });
 	selected = nodeData.length-1;
 	displayNodesAround(selected, degree);
 	openSelectedMenu(selected);
+	temperature = 1;
+}
+
+function addConnection(i, j) {
+	console.log(i, j);
+	nodeData[i].connections.push(j);
+	nodeData[j].connections.push(i);
+	displayNodesAround(i, degree);
+	openSelectedMenu(i);
+	temperature = 1;
+}
+
+function removeConnection(i, j) {
+	if (nodeData[i].connections.includes(j)) {
+		nodeData[i].connections.splice(nodeData[i].connections.indexOf(j), 1);
+	}
+	if (nodeData[j].connections.includes(i)) {
+		nodeData[j].connections.splice(nodeData[j].connections.indexOf(i), 1);
+	}
+	displayNodesAround(i, degree);
+	openSelectedMenu(i);
+	temperature = 1;
 }
 
 
@@ -392,9 +414,59 @@ window.onmouseup = function(event) {
 }
 
 function openSelectedMenu(i) {
+	if (i === undefined) {
+		i = selected;
+	} else {
+		//document.getElementById("search-bar").value = "";
+	}
 	document.getElementById("selectedName").value = nodes[i].text;
 	document.getElementById("selected-tags").value = nodes[i].tags;
 	document.getElementsByClassName("selected")[0].style.display = "inline-block";
+	var cons = "";
+	for (let j = 0; j < nodeData[i].connections.length && j < 5; j++) {
+		var connId = nodeData[i].connections[j];
+		if (connId === i) {
+			continue;
+		}
+		var colour = "#999"; // default grey
+		if (nodeData[connId].tags.length > 0) {
+			var colIndex = tags.indexOf(nodeData[connId].tags[0]);
+			colour = tagColours[colIndex];
+			if (colIndex === -1) {
+				colour = "#999"; // default grey
+			}
+		}
+		
+		cons += `<a class="node" onclick="removeConnection(${i}, ${connId})" style="background-color: ${colour};">${nodeData[connId].text}</a>`;
+	}
+	document.getElementById("connections-current").innerHTML = cons;
+	var searchTerm = "";
+	var searchBar = document.getElementById("search-bar");
+	if (searchBar) {
+		searchTerm = document.getElementById("search-bar").value;
+	}
+	cons = "";
+	for (let j = 0; j < nodeData.length && j < 50000; j++) {
+		if (j === i || nodeData[j].connections.includes(i)) {
+			continue;
+		}
+		if (searchTerm.length > 0) {
+			if (!nodeData[j].text.toLowerCase().includes(searchTerm.toLowerCase())) {
+				continue;
+			}
+		}
+		var colour = "#999"; // default grey
+		if (nodeData[j].tags.length > 0) {
+			var colIndex = tags.indexOf(nodeData[j].tags[0]);
+			colour = tagColours[colIndex];
+			if (colIndex === -1) {
+				colour = "#999"; // default grey
+			}
+		}
+		
+		cons += `<a class="node" onclick="addConnection(${i}, ${j})" style="background-color: ${colour};">${nodeData[j].text}</a>`;
+	}
+	document.getElementById("connections-to-add").innerHTML = cons;
 }
 
 function closeSelectedMenu() {

@@ -27,7 +27,11 @@
 				<div id="selected-content">
 					<input id="selectedName" oninput="updateSelected()"></input>
 					<a>Tags: [</a><input id="selected-tags" oninput="updateSelected()"></input><a>]</a>
-					<div id="connections"></div>
+					<h3>Current Connections</h3>
+					<div id="connections-current"></div>
+					<h3>Add Connections</h3>
+					<input type="text" placeholder="Search..." id="search-bar" oninput="openSelectedMenu()" autofocus />
+					<div id="connections-to-add"></div>
 				</div>
 			</div>
 			
