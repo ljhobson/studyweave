@@ -178,6 +178,9 @@ function displayNodesAround(id, degree) {
 	
 	while (stack.length > 0) {
 		var current = stack.shift();
+		if (!current.node) {
+			continue;
+		}
 		var subject = current.node;
 		var distance = current.distance;
 		var parentId = current.parentId; // for the re arranging if needed
@@ -227,6 +230,17 @@ function displayNodesAround(id, degree) {
 	
 }
 
+function moveTab(i, x, y) {
+	var tabs = document.getElementsByClassName("tab-draggable");
+	var tab = tabs[i];
+	tab.x = x - tab.xoff;
+	tab.y = y - tab.yoff;
+	
+	tab.style.left = tab.x + "px";
+	tab.style.top = tab.y + "px";
+}
+
+var draggingTab = null;
 function createControls() { // most OP function I have ever written - could be more OP if change it to classes instead of ID's
 	var tabs = document.getElementsByClassName("tab-controls");
 	for (let i = 0; i < tabs.length; i++) {
@@ -245,13 +259,32 @@ function createControls() { // most OP function I have ever written - could be m
 			}
 			
 		};
+		
 	}
 	
+}
+
+function makeDraggable() {
+	// make draggable
+	var tabs = document.getElementsByClassName("tab-draggable");
+	for (let i = 0; i < tabs.length; i++) {
+		var tab = tabs[i];
+		tab.onmousedown = function(event) {
+			if (!tab.x && !tab.y) {
+				tab.x = 0;
+				tab.y = 0;
+			}
+			tab.xoff = mouse.x - tab.x;
+			tab.yoff = mouse.y - tab.y;
+			draggingTab = i;
+		};
+	}
 }
 
 var filename = null;
 window.onload = async function(event) {
 	createControls();
+	makeDraggable();
 	resize();
 	var projectId = window.location.pathname.split("/")[2];
 	const response = await fetch('/curricula/' + projectId, {
@@ -358,6 +391,13 @@ function removeConnection(i, j) {
 	temperature = 1;
 }
 
+function tryDelete() {
+	if (confirm("Are you sure you want to delete " + nodeData[selected].text + "?")) {
+		nodeData[selected] = undefined;
+		canvas.focus();
+	}
+}
+
 
 var temperature = 1;
 var cooling = 0.99;
@@ -374,6 +414,10 @@ var mouse = {};
 window.onmousemove = function(event) {
 	mouse.x = event.clientX - Math.ceil(document.getElementsByClassName("sidebar")[0]?.getBoundingClientRect().width || 0);
 	mouse.y = event.clientY;
+	
+	if (draggingTab !== null) {
+		moveTab(draggingTab, mouse.x, mouse.y);
+	}
 }
 
 canvas.onmousedown = function(event) {
@@ -381,6 +425,8 @@ canvas.onmousedown = function(event) {
 	mouse.x = event.clientX - Math.ceil(document.getElementsByClassName("sidebar")[0]?.getBoundingClientRect().width || 0);
 	mouse.y = event.clientY;
 	console.log(event);
+	
+	
 	
 	for (var i = 0; i < nodes.length; i++) {
 		if (!nodes[i]) { continue }; // skip over empty ones
@@ -411,6 +457,7 @@ window.onmouseup = function(event) {
 	mouse.y = event.clientY;
 	
 	moving = false;
+	draggingTab = null;
 }
 
 function openSelectedMenu(i) {
@@ -425,7 +472,7 @@ function openSelectedMenu(i) {
 	var cons = "";
 	for (let j = 0; j < nodeData[i].connections.length && j < 500000; j++) {
 		var connId = nodeData[i].connections[j];
-		if (connId === i) {
+		if (connId === i || !nodeData[connId]) {
 			continue;
 		}
 		var colour = "#999"; // default grey
@@ -439,7 +486,6 @@ function openSelectedMenu(i) {
 		
 		cons += `<a class="node" onclick="removeConnection(${i}, ${connId})" style="background-color: ${colour};">${nodeData[connId].text}</a>`;
 	}
-	console.log(cons);
 	if (cons.length === 0) {
 		cons = "<i>There are no connections</i>"
 	}
@@ -451,7 +497,7 @@ function openSelectedMenu(i) {
 	}
 	cons = "";
 	for (let j = 0; j < nodeData.length && j < 500000; j++) {
-		if (j === i || nodeData[j].connections.includes(i)) {
+		if (j === i || !nodeData[j] || nodeData[j].connections.includes(i)) {
 			continue;
 		}
 		if (searchTerm.length > 0) {
@@ -470,7 +516,6 @@ function openSelectedMenu(i) {
 		
 		cons += `<a class="node" onclick="addConnection(${i}, ${j})" style="background-color: ${colour};">${nodeData[j].text}</a>`;
 	}
-	console.log(cons);
 	if (cons.length === 0) {
 		cons = "<i>There are no nodes to add</i>"
 	}
