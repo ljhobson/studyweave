@@ -150,8 +150,8 @@ var nodeData = [];
 
 
 function updateNodeDimensions(node) {
-	node.x = 0/(2 * xScaleFactor) + Math.random();
-	node.y = 0/(2) + Math.random();
+	node.x = Math.random();
+	node.y = Math.random();
 	if (!node.width) {
 		node.width = 0;
 	}
@@ -244,6 +244,7 @@ function displayAllNodes() {
 	nodes = [];
 	for (var i = 0; i < nodeData.length; i++) {
 		if (nodeData[i]) {
+			nodeData[i].size = Math.floor(5 + nodeData[i].connections.length * 5);
 			nodes.push(nodeData[i]);
 		}
 	}
@@ -379,8 +380,8 @@ function loadNodeData() {
 
 function addNode(x, y) {
 	if (!(x != undefined && y != undefined)) {
-		x = 0 / 4 + Math.random();
-		y = 0 / 2 + Math.random();
+		x = Math.random();
+		y = Math.random();
 	}
 	nodeData.push( { id: nodeData.length, text: "new node", x: x, y: y, size: 5, connections: [], tags: [] });
 	selected = nodeData.length-1;
@@ -679,18 +680,18 @@ function drawRoundedRect(ctx, x, y, w, h, r) {
 }
 
 function bound(node) {
-	if (node.x < -canvas.width/2) {
-		node.x = -canvas.width/2;
-	}
-	if (node.x > canvas.width/2) {
-		node.x = canvas.width/2;
-	}
-	if (node.y < -canvas.height/2) {
-		node.y = -canvas.height/2;
-	}
-	if (node.y > canvas.height/2) {
-		node.y = canvas.height/2;
-	}
+//	if (node.x < -canvas.width/2) {
+//		node.x = -canvas.width/2;
+//	}
+//	if (node.x > canvas.width/2) {
+//		node.x = canvas.width/2;
+//	}
+//	if (node.y < -canvas.height/2) {
+//		node.y = -canvas.height/2;
+//	}
+//	if (node.y > canvas.height/2) {
+//		node.y = canvas.height/2;
+//	}
 }
 
 function mag(a, b) {
@@ -765,7 +766,6 @@ function update() {
 			} else {
 				c = -(speed*5*tmass / (0.1 + dist2)); // bigger the distance the smaller the force
 			}
-			
 			dx += c*(target.x - subject.x);
 			dy += c*(target.y - subject.y);
 			
