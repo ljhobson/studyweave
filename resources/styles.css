@@ -244,6 +244,7 @@ h2 {
 	border-radius: 6px;
 	cursor: pointer;
 	
+	
 	width: calc(100% - 40px);
 	margin-bottom: auto;
 	pointer-events: none;
@@ -459,6 +460,17 @@ h2 {
 	background-color: #e43;
 	color: #911;
 	border-color: #911;
+}
+
+.settings-actual {
+	max-width: 400px;
+	background-color: white;
+	padding: 5px 30px 10px 10px;
+	border-radius: 12px;
+	box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+	
+	display: inline-block;
+	position: relative;
 }
 
 

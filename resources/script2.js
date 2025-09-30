@@ -20,6 +20,12 @@ var nodeStyle = {
 
 var selectedStyle = "#ff0";
 
+var settings = {};
+function updateSettings() {
+	document.getElementById("settings-actual-content").innerHTML = `<input type="checkbox">test</input>`;
+	checkbox;
+}
+
 
 var xScaleFactor = 2;
 
@@ -144,8 +150,8 @@ var nodeData = [];
 
 
 function updateNodeDimensions(node) {
-	node.x = canvas.width/(2 * xScaleFactor) + Math.random();
-	node.y = canvas.height/(2) + Math.random();
+	node.x = 0/(2 * xScaleFactor) + Math.random();
+	node.y = 0/(2) + Math.random();
 	if (!node.width) {
 		node.width = 0;
 	}
@@ -171,6 +177,10 @@ function generateNodeData() {
 
 var searched = [];
 function displayNodesAround(id, degree) {
+	if (allNodes) {
+		displayAllNodes();
+		return;
+	}
 	nodes = [];
 	var stack = [{distance: 0, node: nodeData[id], parentId: null}];
 	var prevSearched = searched;
@@ -228,6 +238,15 @@ function displayNodesAround(id, degree) {
 	
 	updateTags();
 	
+}
+
+function displayAllNodes() {
+	nodes = [];
+	for (var i = 0; i < nodeData.length; i++) {
+		if (nodeData[i]) {
+			nodes.push(nodeData[i]);
+		}
+	}
 }
 
 function moveTab(i, x, y) {
@@ -360,14 +379,15 @@ function loadNodeData() {
 
 function addNode(x, y) {
 	if (!(x != undefined && y != undefined)) {
-		x = canvas.width / 4 + Math.random();
-		y = canvas.height / 2 + Math.random();
+		x = 0 / 4 + Math.random();
+		y = 0 / 2 + Math.random();
 	}
 	nodeData.push( { id: nodeData.length, text: "new node", x: x, y: y, size: 5, connections: [], tags: [] });
 	selected = nodeData.length-1;
 	displayNodesAround(selected, degree);
 	openSelectedMenu(selected);
 	temperature = 1;
+	setSaveStatus(false);
 }
 
 function addConnection(i, j) {
@@ -377,6 +397,7 @@ function addConnection(i, j) {
 	displayNodesAround(i, degree);
 	openSelectedMenu(i);
 	temperature = 1;
+	setSaveStatus(false);
 }
 
 function removeConnection(i, j) {
@@ -389,15 +410,17 @@ function removeConnection(i, j) {
 	displayNodesAround(i, degree);
 	openSelectedMenu(i);
 	temperature = 1;
+	setSaveStatus(false);
 }
 
 function tryDelete() {
 	if (confirm("Are you sure you want to delete " + nodeData[selected].text + "?")) {
-		nodeData[selected] = undefined;
+		//nodeData[selected] = undefined;
 		canvas.focus();
 	}
 }
 
+var allNodes = true;
 
 var temperature = 1;
 var cooling = 0.99;
@@ -411,9 +434,14 @@ var selected = 0;
 var moving = false;
 var mouse = {};
 
+var zoom = 1;
+
 window.onmousemove = function(event) {
-	mouse.x = event.clientX - Math.ceil(document.getElementsByClassName("sidebar")[0]?.getBoundingClientRect().width || 0);
-	mouse.y = event.clientY;
+	mouse.x = -canvas.width/2 + event.clientX - Math.ceil(document.getElementsByClassName("sidebar")[0]?.getBoundingClientRect().width || 0);
+	mouse.y = -canvas.height/2 + event.clientY;
+	
+	mouse.x /= zoom;
+	mouse.y /= zoom;
 	
 	if (draggingTab !== null) {
 		moveTab(draggingTab, mouse.x, mouse.y);
@@ -422,8 +450,10 @@ window.onmousemove = function(event) {
 
 canvas.onmousedown = function(event) {
 	mouse.down = true;
-	mouse.x = event.clientX - Math.ceil(document.getElementsByClassName("sidebar")[0]?.getBoundingClientRect().width || 0);
-	mouse.y = event.clientY;
+	mouse.x = -canvas.width/2 + event.clientX - Math.ceil(document.getElementsByClassName("sidebar")[0]?.getBoundingClientRect().width || 0);
+	mouse.y = -canvas.height/2 + event.clientY;
+	mouse.x /= zoom;
+	mouse.y /= zoom;
 	console.log(event);
 	
 	
@@ -451,10 +481,16 @@ canvas.onmousedown = function(event) {
 	closeSelectedMenu();
 }
 
+canvas.onwheel = function(event) {
+	zoom *= 1+0.1*(1-2*(event.deltaY>0));
+}
+
 window.onmouseup = function(event) {
 	mouse.down = false;
-	mouse.x = event.clientX - Math.ceil(document.getElementsByClassName("sidebar")[0]?.getBoundingClientRect().width || 0);
-	mouse.y = event.clientY;
+	mouse.x = -canvas.width/2 + event.clientX - Math.ceil(document.getElementsByClassName("sidebar")[0]?.getBoundingClientRect().width || 0);
+	mouse.y = -canvas.height/2 + event.clientY;
+	mouse.x /= zoom;
+	mouse.y /= zoom;
 	
 	moving = false;
 	draggingTab = null;
@@ -597,17 +633,18 @@ function drawNode(node) {
 	if (node.isDot) {
 		ctx.fillStyle = nodeStyle.strokeColor;
 		ctx.beginPath();
-		ctx.arc(renderX, node.y, 5, 0, Math.PI * 2);
+		ctx.arc(renderX * zoom, node.y * zoom, 5, 0, Math.PI * 2);
 		ctx.fill();
 		return;
 	}
 	
 	ctx.font = (8 + Math.ceil(node.size/3)) + "px Arial";
 	var textWidth = ctx.measureText(node.text).width;
+	ctx.font = (8 + Math.ceil(node.size/3))*zoom + "px Arial";
 	
 	node.width = textWidth+node.size;
 	node.height = node.size+10;
-	drawRoundedRect(ctx, renderX-textWidth/2-node.size/2, node.y-node.size/2-5, node.width, node.height, 5);
+	drawRoundedRect(ctx, canvas.width/2 + (renderX-textWidth/2-node.size/2) * zoom, canvas.height/2 + (node.y-node.size/2-5) * zoom, node.width * zoom, node.height * zoom, 5*zoom);
 	ctx.fill();
 	ctx.shadowBlur = 0;
 	if (selected === node.id) {
@@ -624,7 +661,7 @@ function drawNode(node) {
 	ctx.textBaseline = "middle";
 	
 	ctx.fillStyle = "#fff";
-	ctx.fillText(node.text, renderX-textWidth/2, node.y);
+	ctx.fillText(node.text, canvas.width/2 + (renderX-textWidth/2) * zoom, canvas.height/2 + node.y * zoom);
 }
 
 function drawRoundedRect(ctx, x, y, w, h, r) {
@@ -642,17 +679,17 @@ function drawRoundedRect(ctx, x, y, w, h, r) {
 }
 
 function bound(node) {
-	if (node.x < 0) {
-		node.x = 0;
+	if (node.x < -canvas.width/2) {
+		node.x = -canvas.width/2;
 	}
-	if (node.x > canvas.width) {
-		node.x = canvas.width;
+	if (node.x > canvas.width/2) {
+		node.x = canvas.width/2;
 	}
-	if (node.y < 0) {
-		node.y = 0;
+	if (node.y < -canvas.height/2) {
+		node.y = -canvas.height/2;
 	}
-	if (node.y > canvas.height) {
-		node.y = canvas.height;
+	if (node.y > canvas.height/2) {
+		node.y = canvas.height/2;
 	}
 }
 
@@ -744,8 +781,8 @@ function update() {
 //			subject.x += dx;
 //			subject.y += dy;
 			
-			dx += subject.size*(canvas.width/(2 * xScaleFactor) - subject.x) / (100000/speed);
-			dy += subject.size*(canvas.height/2 - subject.y) / (100000/speed);
+			dx += subject.size*(0/(2 * xScaleFactor) - subject.x) / (100000/speed);
+			dy += subject.size*(0/2 - subject.y) / (100000/speed);
 			
 			subject.x += dx*temperature;
 			subject.y += dy*temperature;
@@ -774,8 +811,8 @@ function update() {
 				}
 				var target = nodes[j];
 				ctx.beginPath();
-				ctx.lineTo(subject.x * xScaleFactor, subject.y);
-				ctx.lineTo(target.x * xScaleFactor, target.y);
+				ctx.lineTo(canvas.width/2 + subject.x * xScaleFactor * zoom, canvas.height/2 + subject.y * zoom);
+				ctx.lineTo(canvas.width/2 + target.x * xScaleFactor * zoom, canvas.height/2 + target.y * zoom);
 				ctx.stroke();
 			}
 			ctx.lineWidth = 1;
