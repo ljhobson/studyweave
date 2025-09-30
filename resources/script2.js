@@ -245,7 +245,7 @@ function displayAllNodes() {
 	for (var i = 0; i < nodeData.length; i++) {
 		if (nodeData[i]) {
 			nodeData[i].size = Math.floor(5 + nodeData[i].connections.length * 5);
-			nodes.push(nodeData[i]);
+			nodes[i] = (nodeData[i]);
 		}
 	}
 }
@@ -420,7 +420,14 @@ function removeConnection(i, j) {
 
 function tryDelete() {
 	if (confirm("Are you sure you want to delete " + nodeData[selected].text + "?")) {
-		//nodeData[selected] = undefined;
+		for (var i = 0; i < nodeData.length; i++) {
+			if (nodeData[i] && nodeData[i].connections.includes(selected)) {
+				nodeData[i].connections.splice(nodeData[i].connections.indexOf(selected), 1);
+			}
+		}
+		nodeData[selected] = undefined;
+		nodes[selected] = undefined;
+		selected = null;
 		canvas.focus();
 	}
 }
