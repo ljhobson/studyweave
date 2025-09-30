@@ -436,27 +436,42 @@ var moving = false;
 var mouse = {};
 
 var zoom = 1;
+var scroll = {x: 0, y: 0, xoff: 0, yoff: 0};
+var scrolling = false;
 
 window.onmousemove = function(event) {
 	mouse.x = -canvas.width/2 + event.clientX - Math.ceil(document.getElementsByClassName("sidebar")[0]?.getBoundingClientRect().width || 0);
 	mouse.y = -canvas.height/2 + event.clientY;
 	
-	mouse.x /= zoom;
-	mouse.y /= zoom;
 	
 	if (draggingTab !== null) {
 		moveTab(draggingTab, mouse.x, mouse.y);
 	}
+	
+	mouse.x /= zoom;
+	mouse.y /= zoom;
+	
+	if (scrolling) {
+		scroll.x = -mouse.x - scroll.xoff;
+		scroll.y = -mouse.y - scroll.yoff;
+	}
+	
+	mouse.x += scroll.x;
+	mouse.y += scroll.y;
+	
 }
 
 canvas.onmousedown = function(event) {
 	mouse.down = true;
 	mouse.x = -canvas.width/2 + event.clientX - Math.ceil(document.getElementsByClassName("sidebar")[0]?.getBoundingClientRect().width || 0);
 	mouse.y = -canvas.height/2 + event.clientY;
+	
 	mouse.x /= zoom;
 	mouse.y /= zoom;
 	console.log(event);
 	
+	mouse.x += scroll.x;
+	mouse.y += scroll.y;
 	
 	
 	for (var i = 0; i < nodes.length; i++) {
@@ -471,12 +486,18 @@ canvas.onmousedown = function(event) {
 			displayNodesAround(selected, degree);
 			openSelectedMenu(selected);
 			temperature = 1;
-			
+			scrolling = false;
 			return;
 			break;
 		}
 	}
 	
+	mouse.x -= scroll.x;
+	mouse.y -= scroll.y;
+	
+	scrolling = true;
+	scroll.xoff = -scroll.x - mouse.x;
+	scroll.yoff = -scroll.y - mouse.y;
 	moving = false;
 	selected = false;
 	closeSelectedMenu();
@@ -493,6 +514,7 @@ window.onmouseup = function(event) {
 	mouse.x /= zoom;
 	mouse.y /= zoom;
 	
+	scrolling = false;
 	moving = false;
 	draggingTab = null;
 }
@@ -645,7 +667,7 @@ function drawNode(node) {
 	
 	node.width = textWidth+node.size;
 	node.height = node.size+10;
-	drawRoundedRect(ctx, canvas.width/2 + (renderX-textWidth/2-node.size/2) * zoom, canvas.height/2 + (node.y-node.size/2-5) * zoom, node.width * zoom, node.height * zoom, 5*zoom);
+	drawRoundedRect(ctx, canvas.width/2 + (renderX-textWidth/2-node.size/2 - scroll.x) * zoom, canvas.height/2 + (node.y-node.size/2-5 - scroll.y) * zoom, node.width * zoom, node.height * zoom, 5*zoom);
 	ctx.fill();
 	ctx.shadowBlur = 0;
 	if (selected === node.id) {
@@ -662,7 +684,7 @@ function drawNode(node) {
 	ctx.textBaseline = "middle";
 	
 	ctx.fillStyle = "#fff";
-	ctx.fillText(node.text, canvas.width/2 + (renderX-textWidth/2) * zoom, canvas.height/2 + node.y * zoom);
+	ctx.fillText(node.text, canvas.width/2 + (renderX-textWidth/2 - scroll.x) * zoom, canvas.height/2 + (node.y - scroll.y) * zoom);
 }
 
 function drawRoundedRect(ctx, x, y, w, h, r) {
@@ -798,6 +820,11 @@ function update() {
 		}
 	}
 	
+	// draw background
+	ctx.fillStyle = "#ccc";
+	ctx.fillRect(-scroll.x*zoom + canvas.width/2, 0, 2*zoom, canvas.height);
+	ctx.fillRect(0, -scroll.y*zoom + canvas.height/2, canvas.width, 2*zoom);
+	
 	// draw connections
 	for (var i = 0; i < nodes.length; i++) {
 		if (!nodes[i]) { continue }; // skip over empty ones
@@ -811,8 +838,8 @@ function update() {
 				}
 				var target = nodes[j];
 				ctx.beginPath();
-				ctx.lineTo(canvas.width/2 + subject.x * xScaleFactor * zoom, canvas.height/2 + subject.y * zoom);
-				ctx.lineTo(canvas.width/2 + target.x * xScaleFactor * zoom, canvas.height/2 + target.y * zoom);
+				ctx.lineTo(canvas.width/2 + (subject.x * xScaleFactor - scroll.x) * zoom, canvas.height/2 + (subject.y - scroll.y) * zoom);
+				ctx.lineTo(canvas.width/2 + (target.x * xScaleFactor - scroll.x) * zoom, canvas.height/2 + (target.y - scroll.y) * zoom);
 				ctx.stroke();
 			}
 			ctx.lineWidth = 1;
