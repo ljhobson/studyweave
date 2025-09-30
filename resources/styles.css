@@ -473,5 +473,8 @@ h2 {
 	position: relative;
 }
 
-
+.selected {
+	pointer-events: none;
+	user-select: none;
+}
 
