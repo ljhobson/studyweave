@@ -290,6 +290,7 @@ function makeDraggable() {
 	for (let i = 0; i < tabs.length; i++) {
 		var tab = tabs[i];
 		tab.onmousedown = function(event) {
+			console.log(event.target.tagName);
 			if (event.target.tagName === "INPUT") {
 				return;
 			}
