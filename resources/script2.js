@@ -294,8 +294,8 @@ function makeDraggable() {
 				tab.x = 0;
 				tab.y = 0;
 			}
-			tab.xoff = mouse.x - tab.x;
-			tab.yoff = mouse.y - tab.y;
+			tab.xoff = (mouse.x*zoom - tab.x - scroll.x*zoom);
+			tab.yoff = (mouse.y*zoom - tab.y - scroll.y*zoom);
 			draggingTab = i;
 		};
 	}
@@ -645,7 +645,7 @@ function drawNode(node) {
 		}
 		ctx.strokeStyle = "#444";
 	}
-	ctx.lineWidth = 2;
+	ctx.lineWidth = 2 * zoom;
 	ctx.shadowColor = nodeStyle.shadowColor;
 	ctx.shadowBlur = nodeStyle.shadowBlur;
 	if (renderTransparent) {
@@ -672,10 +672,10 @@ function drawNode(node) {
 	ctx.shadowBlur = 0;
 	if (selected === node.id) {
 		ctx.strokeStyle = selectedStyle;
-		ctx.lineWidth = 4;
+		ctx.lineWidth = 4 * zoom / 2;
 		ctx.stroke();
 		ctx.strokeStyle = nodeStyle.strokeColor;
-		ctx.lineWidth = 2;
+		ctx.lineWidth = 2 * zoom / 2;
 	}
 	ctx.stroke();
 
@@ -842,7 +842,7 @@ function update() {
 				ctx.lineTo(canvas.width/2 + (target.x * xScaleFactor - scroll.x) * zoom, canvas.height/2 + (target.y - scroll.y) * zoom);
 				ctx.stroke();
 			}
-			ctx.lineWidth = 1;
+			ctx.lineWidth = 1 * zoom / 2;
 		}
 	}
 	
