@@ -52,7 +52,11 @@ function importCurriculum(file) {
 				makeBidirectional(nodeData);
 				nodeMap = {};
 				nodeData.forEach(n => updateNodeDimensions(n));
-				nodeData.forEach(n => nodeMap[n.id] = n);
+				for (var i = 0; i < nodeData.length; i++) {
+					if (nodeData[i]) {
+						nodeData[i].id = i;
+					}
+				}
 				selected = 0;
 				if (nodeData.length > 0) {
 					displayNodesAround(selected, degree);
@@ -150,6 +154,9 @@ var nodeData = [];
 
 
 function updateNodeDimensions(node) {
+	if (!node) {
+		return;
+	}
 	node.x = Math.random();
 	node.y = Math.random();
 	if (!node.width) {
@@ -331,7 +338,7 @@ window.onload = async function(event) {
 		update();
 		setSaveStatus(true);
 	} else {
-		window.location.href = "/";
+		//window.location.href = "/";
 	}
 	
 }
@@ -535,6 +542,9 @@ function openSelectedMenu(i) {
 		i = selected;
 	} else {
 		//document.getElementById("search-bar").value = "";
+	}
+	if (!nodeData[i]) {
+		return;
 	}
 	document.getElementById("selectedName").value = nodes[i].text;
 	document.getElementById("selected-tags").value = nodes[i].tags;
