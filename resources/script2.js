@@ -296,7 +296,7 @@ function makeDraggable() {
 			}
 			if (!tab.x && !tab.y) {
 				tab.x = 0;
-				tab.y = 0;
+				tab.y = -50;
 			}
 			tab.xoff = (mouse.x*zoom - tab.x - scroll.x*zoom);
 			tab.yoff = (mouse.y*zoom - tab.y - scroll.y*zoom);

@@ -267,6 +267,8 @@ h2 {
 	
 	display: inline-block;
 	position: relative;
+	bottom: 50px;
+	user-select: none;
 }
 
 #selectedName {
@@ -471,9 +473,5 @@ h2 {
 	
 	display: inline-block;
 	position: relative;
-}
-
-.selected {
-	user-select: none;
 }
 
