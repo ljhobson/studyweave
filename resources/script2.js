@@ -772,19 +772,19 @@ function unitify(snake, mouse) {
 }
 var snake = {};
 function snakeInit() {
-	snake = {x: 0, y: 0, size: 25, speed: 2, growth: 1, colour: 100, trail: [], direction: {x: 0, y: 0}, dir1: {x: 0, y: 0}, dir2: {x: 0, y: 0}};
+	snake = {x: 0, y: 0, size: 	11, speed: 1.2, growth: 1, colour: 100, trail: [], direction: {x: 0, y: 0}, dir1: {x: 0, y: 0}, dir2: {x: 0, y: 0}};
 	for (var i = 0; i < 15; i++) {
 		snake.trail.push({x: snake.x, y: snake.y, size: snake.size});
 	}
 	
 	// spawn some apples
-	for (var i = 0; i < 100; i++) {
-		addNode(100*(1-2*Math.random()) * canvas.width/xScaleFactor, 100*(1-2*Math.random())*canvas.height, "apple", ["food"]);
+	if (nodeData.length === 0) {
+		for (var i = 0; i < 100; i++) {
+			addNode(100*(1-2*Math.random()) * canvas.width/xScaleFactor, 100*(1-2*Math.random())*canvas.height, "apple", ["food"]);
+		}
 	}
 	
-	for (var i = 0; i < 99; i++) {
-		//addConnection(i, i+1);
-	}
+	zoom = 2;
 	
 	
 	if (!tags.includes("food")) {
@@ -873,7 +873,7 @@ function updateSnake() {
 		var scaledSnake = {x: snake.x / xScaleFactor, y: snake.y};
 		var dist2 = mag(scaledSnake, nodes[i]);
 		var tmass = nodes[i].size ** 2 / 5000;
-		var c = (speed*1 / (0.1 + dist2));
+		var c = ((Math.log(snake.size*nodes[i].size*speed*1) ** 0.5) / (0.1 + dist2*2));
 		var dx = c*(nodes[i].x - scaledSnake.x);
 		var dy = c*(nodes[i].y - scaledSnake.y);
 		nodes[i].x += dx;
@@ -882,18 +882,16 @@ function updateSnake() {
 			snake.x -= dx;
 			snake.y -= dy;
 		}
-		if (dist2 <= (snake.size/2) ** 2 && snake.size > nodes[i].size) {
+		if (dist2 <= (snake.size*0.98) ** 2 && snake.size > nodes[i].size) {
 			var gained = (nodes[i].size ** 2) / (snake.size ** 2) * snake.growth * 8;
 			snake.size += gained;
 			for (var j = 0; j < gained * 3; j++) {
 				snake.trail.push({x: snake.trail[snake.trail.length-1].x, y: snake.trail[snake.trail.length-1].y, size: snake.trail[snake.trail.length-1].size});
 			}
-			snake.speed = (snake.trail.length / 200 + 2);
+			snake.speed = (snake.trail.length / 200 + 1.2);
 			deleteNode(i);
 			spawnApple();
-			if (zoom < snake.size/50) {
-				zoom *= 0.998;
-			}
+			zoom *= 0.99;
 			continue;
 		}
 		
@@ -931,6 +929,7 @@ function drawSnake() {
 	
 	ctx.fillStyle = "#000";
 	for (var i = snake.trail.length - 1; i > 0; i--) {
+		ctx.fillStyle = `hsl(${snake.colour + i + 30}, 80%, 20%)`;
 		ctx.beginPath();
 		ctx.arc((snake.trail[i].x - scroll.x) * zoom + canvas.width/2, (snake.trail[i].y - scroll.y) * zoom + canvas.height/2, snake.trail[i].size * zoom * 1.1, 0, 2*Math.PI);
 		ctx.fill();
