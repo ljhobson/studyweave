@@ -331,13 +331,15 @@ window.onload = async function(event) {
 		if (match && match[1]) filename = match[1];
 	}
 	
-	if (snakeMode) {
-		snakeInit();
-	}
+	
 	
 	
 	var worked = await importCurriculum(res);
 	if (worked) {
+		if (snakeMode) {
+			snakeInit();
+			open
+		}
 		update();
 		setSaveStatus(true);
 	} else {
@@ -392,16 +394,24 @@ function loadNodeData() {
 	update();
 }
 
-function addNode(x, y) {
+function addNode(x, y, name, tags) {
 	if (!(x != undefined && y != undefined)) {
 		x = Math.random();
 		y = Math.random();
 	}
-	nodeData.push( { id: nodeData.length, text: "new node", x: x, y: y, size: 5, connections: [], tags: [] });
+	if (!name) {
+		name = "new node";
+	}
+	if (!tags) {
+		tags = [];
+	}
+	nodeData.push( { id: nodeData.length, text: name, x: x, y: y, size: 5, connections: [], tags: tags });
 	selected = nodeData.length-1;
 	displayNodesAround(selected, degree);
 	openSelectedMenu(selected);
-	temperature = 1;
+	if (!snakeMode) {
+		temperature = 1;
+	}
 	setSaveStatus(false);
 }
 
@@ -411,7 +421,9 @@ function addConnection(i, j) {
 	nodeData[j].connections.push(i);
 	displayNodesAround(i, degree);
 	openSelectedMenu(i);
-	temperature = 1;
+	if (!snakeMode) {
+		temperature = 1;
+	}
 	setSaveStatus(false);
 }
 
@@ -424,7 +436,9 @@ function removeConnection(i, j) {
 	}
 	displayNodesAround(i, degree);
 	openSelectedMenu(i);
-	temperature = 1;
+	if (!snakeMode) {
+		temperature = 1;
+	}
 	setSaveStatus(false);
 }
 
@@ -758,10 +772,90 @@ function unitify(snake, mouse) {
 }
 var snake = {};
 function snakeInit() {
-	snake = {x: 0, y: 0, size: 25, speed: 2, growth: 1, trail: [], direction: {x: 0, y: 0}, dir1: {x: 0, y: 0}, dir2: {x: 0, y: 0}};
+	snake = {x: 0, y: 0, size: 25, speed: 2, growth: 1, colour: 100, trail: [], direction: {x: 0, y: 0}, dir1: {x: 0, y: 0}, dir2: {x: 0, y: 0}};
 	for (var i = 0; i < 15; i++) {
 		snake.trail.push({x: snake.x, y: snake.y, size: snake.size});
 	}
+	
+	// spawn some apples
+	for (var i = 0; i < 100; i++) {
+		addNode(100*(1-2*Math.random()) * canvas.width/xScaleFactor, 100*(1-2*Math.random())*canvas.height, "apple", ["food"]);
+	}
+	
+	for (var i = 0; i < 99; i++) {
+		//addConnection(i, i+1);
+	}
+	
+	
+	if (!tags.includes("food")) {
+		tags.push("food");
+		tagColours.push("#e31");
+	}
+	if (!tags.includes("boss")) {
+		tags.push("boss");
+		tagColours.push("#a10");
+	}
+	
+	closeSelectedMenu();
+}
+var spawnBoss = false;
+function spawnApple() {
+	if (nodeData.length > 100) {
+		if (snake.size > 40 && Math.random() < 0.01) {
+			spawnBoss = true;
+		} else if (!spawnBoss) {
+			addNode(snake.x + (1-6*Math.random()*Math.random())*canvas.width/xScaleFactor, snake.y + (1-6*Math.random()*Math.random())*canvas.height, "apple", ["food"]);
+		}
+	} else {
+		for (var i = 0; i < 3; i++) {
+			addNode(snake.x + (1-4*Math.random()*Math.random())*canvas.width/xScaleFactor, snake.y + (1-4*Math.random()*Math.random())*canvas.height, "apple", ["food"]);
+		}
+	}
+	if (spawnBoss && nodeData.filter(item => item !== undefined).length < 300) {
+		addNode(snake.x + 1.5*(1-2*(Math.random() > 0.5))*canvas.width/xScaleFactor / zoom, snake.y + 1.5*(1-2*(Math.random() > 0.5))*canvas.height / zoom, "Boss", ["boss"]);
+		for (var i = 0; i < snake.size/4 + 20 * Math.random(); i++) {
+			addNode(nodeData[nodeData.length-1-i].x + 100*(1-2*Math.random()), nodeData[nodeData.length-1-i].y + 100*(1-2*Math.random()), "apple", ["boss"]);
+			
+			addConnection(nodeData.length - 1, nodeData.length - 2 - i);
+		}
+	}
+	for (var i = 0; i < snake.trail.length / 100; i++) {
+		var node1 = Math.floor(Math.random() * nodeData.length);
+		var min = 9999999999999999;
+		var node2 = null;
+		for (var j = 0; j < nodeData.length; j++) {
+			if (!nodeData[node1] || !nodeData[j]) {
+				continue;
+			}
+			var dist2 = mag(nodeData[node1], nodeData[j]);
+			if (dist2 < 100) {
+				parent = j;
+				break;
+			}
+			if (dist2 < min) {
+				node2 = j;
+				min = dist2;
+			}
+		}
+		if (nodes[node1] && nodes[node2]) {
+			addConnection(node1, node2);
+		}
+	}
+	
+	
+	if (!tags.includes("food")) {
+		tags.push("food");
+		tagColours.push("#e31");
+	}
+	if (!tags.includes("boss")) {
+		tags.push("boss");
+		tagColours.push("#a10");
+	}
+	
+	temperature = Math.max(temperature, 0.01);
+	
+	closeSelectedMenu();
+	
 }
 function updateSnake() {
 	var movement = unitify(snake, mouse);
@@ -794,8 +888,12 @@ function updateSnake() {
 			for (var j = 0; j < gained * 3; j++) {
 				snake.trail.push({x: snake.trail[snake.trail.length-1].x, y: snake.trail[snake.trail.length-1].y, size: snake.trail[snake.trail.length-1].size});
 			}
-			snake.speed = Math.floor(snake.trail.length / 100 + 2);
+			snake.speed = (snake.trail.length / 200 + 2);
 			deleteNode(i);
+			spawnApple();
+			if (zoom < snake.size/50) {
+				zoom *= 0.998;
+			}
 			continue;
 		}
 		
@@ -842,7 +940,7 @@ function drawSnake() {
 	ctx.fill();
 	
 	for (var i = snake.trail.length - 1; i > 0; i--) {
-		ctx.fillStyle = `hsl(${i}, 80%, 50%)`;
+		ctx.fillStyle = `hsl(${snake.colour + i}, 80%, 50%)`;
 		ctx.beginPath();
 		ctx.arc((snake.trail[i].x - scroll.x) * zoom + canvas.width/2, (snake.trail[i].y - scroll.y) * zoom + canvas.height/2, snake.trail[i].size * zoom, 0, 2*Math.PI);
 		ctx.fill();
