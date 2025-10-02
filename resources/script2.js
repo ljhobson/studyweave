@@ -331,6 +331,10 @@ window.onload = async function(event) {
 		if (match && match[1]) filename = match[1];
 	}
 	
+	if (snakeMode) {
+		snakeInit();
+	}
+	
 	
 	var worked = await importCurriculum(res);
 	if (worked) {
@@ -437,6 +441,8 @@ function tryDelete() {
 		canvas.focus();
 	}
 }
+
+var snakeMode = true;
 
 var allNodes = true;
 
@@ -721,6 +727,85 @@ function drawRoundedRect(ctx, x, y, w, h, r) {
 	ctx.closePath();
 }
 
+function unitify(snake, mouse) {
+	if (mouse.x === undefined || mouse.y === undefined) {
+		mouse.x = 0;
+		mouse.y = 0;
+	}
+	var dist = Math.sqrt(mag(snake, mouse));
+	if (dist === 0) {
+		dist = 0.01;
+	}
+	return {x: (mouse.x - snake.x) / dist, y: (mouse.y - snake.y) / dist};
+}
+var snake = {};
+function snakeInit() {
+	snake = {x: 0, y: 0, size: 25, speed: 2, trail: [], direction: {x: 0, y: 0}};
+	for (var i = 0; i < 15; i++) {
+		snake.trail.push({x: -25*i, y: 0});
+	}
+}
+function updateSnake() {
+	var movement = unitify(snake, mouse);
+	snake.x += movement.x * snake.speed;
+	snake.y += movement.y * snake.speed;
+	snake.direction = movement;
+	//update trail
+	snake.trail[0].x = snake.x;
+	snake.trail[0].y = snake.y;
+	for (var i = snake.trail.length - 1; i > 0; i--) {
+		snake.trail[i].x = snake.trail[i-1].x;
+		snake.trail[i].y = snake.trail[i-1].y;
+	}
+}
+function drawSnake() {
+	var snakeX = (snake.x - scroll.x) * zoom + canvas.width/2;
+	var snakeY = (snake.y - scroll.y) * zoom + canvas.height/2;
+	
+	ctx.fillStyle = "#000";
+	for (var i = snake.trail.length - 1; i > 0; i--) {
+		ctx.beginPath();
+		ctx.arc((snake.trail[i].x - scroll.x) * zoom + canvas.width/2, (snake.trail[i].y - scroll.y) * zoom + canvas.height/2, snake.size * zoom * 1.1, 0, 2*Math.PI);
+		ctx.fill();
+	}
+	
+	for (var i = snake.trail.length - 1; i > 0; i--) {
+		ctx.fillStyle = `hsl(${i*3}, 80%, 50%)`;
+		ctx.beginPath();
+		ctx.arc((snake.trail[i].x - scroll.x) * zoom + canvas.width/2, (snake.trail[i].y - scroll.y) * zoom + canvas.height/2, snake.size * zoom, 0, 2*Math.PI);
+		ctx.fill();
+	}
+	ctx.beginPath();
+	ctx.arc(snakeX, snakeY, snake.size * zoom, 0, 2*Math.PI);
+	ctx.fill();
+	
+	var eyeRadius = snake.size * 0.25;
+	
+	var eye1 = {x: snake.x + (snake.direction.x * snake.size/2 + snake.direction.y * snake.size/2), y: snake.y + (-snake.direction.x * snake.size/2 + snake.direction.y * snake.size/2)};
+	var eye2 = {x: snake.x + (snake.direction.x * snake.size/2 - snake.direction.y * snake.size/2), y: snake.y + (snake.direction.x * snake.size/2 + snake.direction.y * snake.size/2)};
+	ctx.lineWidth = zoom * 3;
+	ctx.strokeStyle = "#000";
+	ctx.fillStyle = "#fff";
+	ctx.beginPath();
+	ctx.arc((eye1.x - scroll.x) * zoom + canvas.width/2, (eye1.y - scroll.y) * zoom + canvas.height/2, snake.size * 0.5 * zoom, 0, 2*Math.PI);
+	ctx.fill();
+	ctx.stroke();
+	ctx.beginPath();
+	ctx.arc((eye2.x - scroll.x) * zoom + canvas.width/2, (eye2.y - scroll.y) * zoom + canvas.height/2, snake.size * 0.5 * zoom, 0, 2*Math.PI);
+	ctx.fill();
+	ctx.stroke();
+	
+	var dir1 = unitify(eye1, mouse);
+	var dir2 = unitify(eye2, mouse);
+	ctx.fillStyle = "#000";
+	ctx.beginPath();
+	ctx.arc((eye1.x - scroll.x + dir1.x * eyeRadius) * zoom + canvas.width/2, (eye1.y - scroll.y + dir1.y * eyeRadius) * zoom + canvas.height/2, snake.size * 0.2 * zoom, 0, 2*Math.PI);
+	ctx.fill();
+	ctx.beginPath();
+	ctx.arc((eye2.x - scroll.x + dir2.x * eyeRadius) * zoom + canvas.width/2, (eye2.y - scroll.y + dir2.y * eyeRadius) * zoom + canvas.height/2, snake.size * 0.2 * zoom, 0, 2*Math.PI);
+	ctx.fill();
+}
+
 function bound(node) {
 //	if (node.x < -canvas.width/2) {
 //		node.x = -canvas.width/2;
@@ -873,6 +958,13 @@ function update() {
 		var subject = nodes[i];
 		drawNode(subject);
 	}
+	
+	// draw snake
+	if (snakeMode) {
+		updateSnake();
+		drawSnake();
+	}
+	
 	
 	requestAnimationFrame(update);
 }
