@@ -430,16 +430,21 @@ function removeConnection(i, j) {
 
 function tryDelete() {
 	if (confirm("Are you sure you want to delete " + nodeData[selected].text + "?")) {
-		for (var i = 0; i < nodeData.length; i++) {
-			if (nodeData[i] && nodeData[i].connections.includes(selected)) {
-				nodeData[i].connections.splice(nodeData[i].connections.indexOf(selected), 1);
-			}
-		}
-		nodeData[selected] = undefined;
-		nodes[selected] = undefined;
-		selected = null;
-		canvas.focus();
+		deleteNode(selected);
 	}
+}
+function deleteNode(selected) {
+	for (var i = 0; i < nodeData.length; i++) {
+		if (nodeData[i] && nodeData[i].connections.includes(selected)) {
+			nodeData[i].connections.splice(nodeData[i].connections.indexOf(selected), 1);
+		}
+	}
+	nodeData[selected] = undefined;
+	nodes[selected] = undefined;
+	selected = null;
+	canvas.focus();
+	displayAllNodes();
+	setSaveStatus(false);
 }
 
 var snakeMode = true;
@@ -463,9 +468,19 @@ var scroll = {x: 0, y: 0, xoff: 0, yoff: 0};
 var scrolling = false;
 
 window.onmousemove = function(event) {
-	mouse.x = -canvas.width/2 + event.clientX - Math.ceil(document.getElementsByClassName("sidebar")[0]?.getBoundingClientRect().width || 0);
-	mouse.y = -canvas.height/2 + event.clientY;
+	mouse.screenX = -canvas.width/2 + event.clientX - Math.ceil(document.getElementsByClassName("sidebar")[0]?.getBoundingClientRect().width || 0);
+	mouse.screenY = -canvas.height/2 + event.clientY;
 	
+	updateMouse();
+}
+
+function updateMouse() {
+	if (!mouse.screenX || !mouse.screenY) {
+		mouse.screenX = 0;
+		mouse.screenY = 0;
+	}
+	mouse.x = mouse.screenX;
+	mouse.y = mouse.screenY;
 	
 	if (draggingTab !== null) {
 		moveTab(draggingTab, mouse.x, mouse.y);
@@ -481,13 +496,14 @@ window.onmousemove = function(event) {
 	
 	mouse.x += scroll.x;
 	mouse.y += scroll.y;
-	
 }
 
 canvas.onmousedown = function(event) {
 	mouse.down = true;
-	mouse.x = -canvas.width/2 + event.clientX - Math.ceil(document.getElementsByClassName("sidebar")[0]?.getBoundingClientRect().width || 0);
-	mouse.y = -canvas.height/2 + event.clientY;
+	mouse.screenX = -canvas.width/2 + event.clientX - Math.ceil(document.getElementsByClassName("sidebar")[0]?.getBoundingClientRect().width || 0);
+	mouse.screenY = -canvas.height/2 + event.clientY;
+	mouse.x = mouse.screenX;
+	mouse.y = mouse.screenY;
 	
 	mouse.x /= zoom;
 	mouse.y /= zoom;
@@ -532,8 +548,10 @@ canvas.onwheel = function(event) {
 
 window.onmouseup = function(event) {
 	mouse.down = false;
-	mouse.x = -canvas.width/2 + event.clientX - Math.ceil(document.getElementsByClassName("sidebar")[0]?.getBoundingClientRect().width || 0);
-	mouse.y = -canvas.height/2 + event.clientY;
+	mouse.screenX = -canvas.width/2 + event.clientX - Math.ceil(document.getElementsByClassName("sidebar")[0]?.getBoundingClientRect().width || 0);
+	mouse.screenY = -canvas.height/2 + event.clientY;
+	mouse.x = mouse.screenX;
+	mouse.y = mouse.screenY;
 	mouse.x /= zoom;
 	mouse.y /= zoom;
 	
@@ -740,22 +758,73 @@ function unitify(snake, mouse) {
 }
 var snake = {};
 function snakeInit() {
-	snake = {x: 0, y: 0, size: 25, speed: 2, trail: [], direction: {x: 0, y: 0}};
+	snake = {x: 0, y: 0, size: 25, speed: 2, growth: 1, trail: [], direction: {x: 0, y: 0}, dir1: {x: 0, y: 0}, dir2: {x: 0, y: 0}};
 	for (var i = 0; i < 15; i++) {
-		snake.trail.push({x: -25*i, y: 0});
+		snake.trail.push({x: snake.x, y: snake.y, size: snake.size});
 	}
 }
 function updateSnake() {
 	var movement = unitify(snake, mouse);
+	snake.direction = movement;
+	snake.eye1 = {x: snake.x + (snake.direction.x * snake.size/2 + snake.direction.y * snake.size/2), y: snake.y + (-snake.direction.x * snake.size/2 + snake.direction.y * snake.size/2)};
+	snake.eye2 = {x: snake.x + (snake.direction.x * snake.size/2 - snake.direction.y * snake.size/2), y: snake.y + (snake.direction.x * snake.size/2 + snake.direction.y * snake.size/2)};
+	snake.closest1 = null;
+	snake.closest2 = null;
+	var min1 = 999999999999;
+	var min2 = 999999999999;
+	for (var i = 0; i < nodes.length; i++) {
+		if (!nodes[i]) {
+			continue;
+		}
+		var scaledSnake = {x: snake.x / xScaleFactor, y: snake.y};
+		var dist2 = mag(scaledSnake, nodes[i]);
+		var tmass = nodes[i].size ** 2 / 5000;
+		var c = (speed*1 / (0.1 + dist2));
+		var dx = c*(nodes[i].x - scaledSnake.x);
+		var dy = c*(nodes[i].y - scaledSnake.y);
+		nodes[i].x += dx;
+		nodes[i].y += dy;
+		if (snake.size <= nodes[i].size) {
+			snake.x -= dx;
+			snake.y -= dy;
+		}
+		if (dist2 <= (snake.size/2) ** 2 && snake.size > nodes[i].size) {
+			var gained = (nodes[i].size ** 2) / (snake.size ** 2) * snake.growth * 8;
+			snake.size += gained;
+			for (var j = 0; j < gained * 3; j++) {
+				snake.trail.push({x: snake.trail[snake.trail.length-1].x, y: snake.trail[snake.trail.length-1].y, size: snake.trail[snake.trail.length-1].size});
+			}
+			snake.speed = Math.floor(snake.trail.length / 100 + 2);
+			deleteNode(i);
+			continue;
+		}
+		
+		// calculate closest to the eyes
+		if (snake.closest1 === null || mag({x: snake.eye1.x / xScaleFactor, y: snake.eye1.y}, nodes[i]) < min1) {
+			min1 = mag({x: snake.eye1.x / xScaleFactor, y: snake.eye1.y}, nodes[i]);
+			snake.closest1 = i;
+		}
+		if (snake.closest2 === null || mag({x: snake.eye2.x / xScaleFactor, y: snake.eye2.y}, nodes[i]) < min2) {
+			min2 = mag({x: snake.eye2.x / xScaleFactor, y: snake.eye2.y}, nodes[i]);
+			snake.closest2 = i;
+		}
+		
+	}
+	if (mag(snake, mouse) <= snake.size * snake.size) {
+		return;
+	}
 	snake.x += movement.x * snake.speed;
 	snake.y += movement.y * snake.speed;
-	snake.direction = movement;
+	snake.eye1 = {x: snake.x + (snake.direction.x * snake.size/2 + snake.direction.y * snake.size/2), y: snake.y + (-snake.direction.x * snake.size/2 + snake.direction.y * snake.size/2)};
+	snake.eye2 = {x: snake.x + (snake.direction.x * snake.size/2 - snake.direction.y * snake.size/2), y: snake.y + (snake.direction.x * snake.size/2 + snake.direction.y * snake.size/2)};
 	//update trail
 	snake.trail[0].x = snake.x;
 	snake.trail[0].y = snake.y;
+	snake.trail[0].size = snake.size;
 	for (var i = snake.trail.length - 1; i > 0; i--) {
-		snake.trail[i].x = snake.trail[i-1].x;
-		snake.trail[i].y = snake.trail[i-1].y;
+		snake.trail[i].x = (snake.trail[i-1].x + snake.trail[i].x) / 2;
+		snake.trail[i].y = (snake.trail[i-1].y + snake.trail[i].y) / 2;
+		snake.trail[i].size = (snake.trail[i-1].size + snake.trail[i].size) / 2;
 	}
 }
 function drawSnake() {
@@ -765,14 +834,17 @@ function drawSnake() {
 	ctx.fillStyle = "#000";
 	for (var i = snake.trail.length - 1; i > 0; i--) {
 		ctx.beginPath();
-		ctx.arc((snake.trail[i].x - scroll.x) * zoom + canvas.width/2, (snake.trail[i].y - scroll.y) * zoom + canvas.height/2, snake.size * zoom * 1.1, 0, 2*Math.PI);
+		ctx.arc((snake.trail[i].x - scroll.x) * zoom + canvas.width/2, (snake.trail[i].y - scroll.y) * zoom + canvas.height/2, snake.trail[i].size * zoom * 1.1, 0, 2*Math.PI);
 		ctx.fill();
 	}
+	ctx.beginPath();
+	ctx.arc(snakeX, snakeY, snake.size * zoom * 1.1, 0, 2*Math.PI);
+	ctx.fill();
 	
 	for (var i = snake.trail.length - 1; i > 0; i--) {
-		ctx.fillStyle = `hsl(${i*3}, 80%, 50%)`;
+		ctx.fillStyle = `hsl(${i}, 80%, 50%)`;
 		ctx.beginPath();
-		ctx.arc((snake.trail[i].x - scroll.x) * zoom + canvas.width/2, (snake.trail[i].y - scroll.y) * zoom + canvas.height/2, snake.size * zoom, 0, 2*Math.PI);
+		ctx.arc((snake.trail[i].x - scroll.x) * zoom + canvas.width/2, (snake.trail[i].y - scroll.y) * zoom + canvas.height/2, snake.trail[i].size * zoom, 0, 2*Math.PI);
 		ctx.fill();
 	}
 	ctx.beginPath();
@@ -781,9 +853,9 @@ function drawSnake() {
 	
 	var eyeRadius = snake.size * 0.25;
 	
-	var eye1 = {x: snake.x + (snake.direction.x * snake.size/2 + snake.direction.y * snake.size/2), y: snake.y + (-snake.direction.x * snake.size/2 + snake.direction.y * snake.size/2)};
-	var eye2 = {x: snake.x + (snake.direction.x * snake.size/2 - snake.direction.y * snake.size/2), y: snake.y + (snake.direction.x * snake.size/2 + snake.direction.y * snake.size/2)};
-	ctx.lineWidth = zoom * 3;
+	var eye1 = snake.eye1;
+	var eye2 = snake.eye2;
+	ctx.lineWidth = zoom * eyeRadius * 0.4;
 	ctx.strokeStyle = "#000";
 	ctx.fillStyle = "#fff";
 	ctx.beginPath();
@@ -795,14 +867,26 @@ function drawSnake() {
 	ctx.fill();
 	ctx.stroke();
 	
-	var dir1 = unitify(eye1, mouse);
-	var dir2 = unitify(eye2, mouse);
+	if (snake.closest1 !== null && nodes[snake.closest1]) {
+		dir1New = unitify({x: snake.eye1.x / xScaleFactor, y: snake.eye1.y}, nodes[snake.closest1]);
+		snake.dir1 = {x: (snake.dir1.x + dir1New.x) / 2, y: (snake.dir1.y + dir1New.y) / 2};
+	} else {
+		dir1New = unitify(snake.eye1, mouse);
+		snake.dir1 = {x: (snake.dir1.x + dir1New.x) / 2, y: (snake.dir1.y + dir1New.y) / 2};
+	}
+	if (snake.closest2 !== null && nodes[snake.closest2]) {
+		dir2New = unitify({x: snake.eye2.x / xScaleFactor, y: snake.eye2.y}, nodes[snake.closest2]);
+		snake.dir2 = {x: (snake.dir2.x + dir2New.x) / 2, y: (snake.dir2.y + dir2New.y) / 2};
+	} else {
+		dir2New = unitify(snake.eye2, mouse);
+		snake.dir2 = {x: (snake.dir2.x + dir2New.x) / 2, y: (snake.dir2.y + dir2New.y) / 2};
+	}
 	ctx.fillStyle = "#000";
 	ctx.beginPath();
-	ctx.arc((eye1.x - scroll.x + dir1.x * eyeRadius) * zoom + canvas.width/2, (eye1.y - scroll.y + dir1.y * eyeRadius) * zoom + canvas.height/2, snake.size * 0.2 * zoom, 0, 2*Math.PI);
+	ctx.arc((eye1.x - scroll.x + snake.dir1.x * eyeRadius) * zoom + canvas.width/2, (eye1.y - scroll.y + snake.dir1.y * eyeRadius) * zoom + canvas.height/2, snake.size * 0.2 * zoom, 0, 2*Math.PI);
 	ctx.fill();
 	ctx.beginPath();
-	ctx.arc((eye2.x - scroll.x + dir2.x * eyeRadius) * zoom + canvas.width/2, (eye2.y - scroll.y + dir2.y * eyeRadius) * zoom + canvas.height/2, snake.size * 0.2 * zoom, 0, 2*Math.PI);
+	ctx.arc((eye2.x - scroll.x + snake.dir2.x * eyeRadius) * zoom + canvas.width/2, (eye2.y - scroll.y + snake.dir2.y * eyeRadius) * zoom + canvas.height/2, snake.size * 0.2 * zoom, 0, 2*Math.PI);
 	ctx.fill();
 }
 
@@ -963,8 +1047,12 @@ function update() {
 	if (snakeMode) {
 		updateSnake();
 		drawSnake();
+		if (!scrolling) {
+			scroll.x = (scroll.x * 15 + snake.x) / 16;
+			scroll.y = (scroll.y * 15 + snake.y) / 16;
+			updateMouse();
+		}
 	}
-	
 	
 	requestAnimationFrame(update);
 }
