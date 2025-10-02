@@ -50,10 +50,9 @@ function importCurriculum(file) {
 				}
 				updateKeys();
 				makeBidirectional(nodeData);
-				nodeMap = {};
-				nodeData.forEach(n => updateNodeDimensions(n));
 				for (var i = 0; i < nodeData.length; i++) {
 					if (nodeData[i]) {
+						updateNodeDimensions(nodeData[i])
 						nodeData[i].id = i;
 					}
 				}
@@ -62,7 +61,7 @@ function importCurriculum(file) {
 					displayNodesAround(selected, degree);
 					openSelectedMenu(selected);
 				}
-				console.log(nodeData);
+				console.log(nodeData[0]);
 				console.log("import complete");
 				resolve(true); // RESOLVED
 		//		selectedNode = nodes[0];
@@ -157,8 +156,8 @@ function updateNodeDimensions(node) {
 	if (!node) {
 		return;
 	}
-	node.x = Math.random();
-	node.y = Math.random();
+	node.x = Math.random()*nodeData.length;
+	node.y = Math.random()*nodeData.length;
 	if (!node.width) {
 		node.width = 0;
 	}
@@ -338,7 +337,7 @@ window.onload = async function(event) {
 		update();
 		setSaveStatus(true);
 	} else {
-		//window.location.href = "/";
+		window.location.href = "/";
 	}
 	
 }
@@ -809,6 +808,7 @@ function update() {
 			} else {
 				c = -(speed*5*tmass / (0.1 + dist2)); // bigger the distance the smaller the force
 			}
+			
 			dx += c*(target.x - subject.x);
 			dy += c*(target.y - subject.y);
 			
