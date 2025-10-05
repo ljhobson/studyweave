@@ -336,9 +336,11 @@ window.onload = async function(event) {
 	
 	var worked = await importCurriculum(res);
 	if (worked) {
+		if (filename === "snake_curriculum.json") {
+			snakeMode = true;
+		}
 		if (snakeMode) {
 			snakeInit();
-			open
 		}
 		update();
 		setSaveStatus(true);
@@ -461,7 +463,7 @@ function deleteNode(selected) {
 	setSaveStatus(false);
 }
 
-var snakeMode = true;
+var snakeMode = false;
 
 var allNodes = true;
 
@@ -812,6 +814,7 @@ function spawnApple() {
 		}
 	}
 	if (spawnBoss && nodeData.filter(item => item !== undefined).length < 300) {
+		spawnBoss = false;
 		addNode(snake.x + 1.5*(1-2*(Math.random() > 0.5))*canvas.width/xScaleFactor / zoom, snake.y + 1.5*(1-2*(Math.random() > 0.5))*canvas.height / zoom, "Boss", ["boss"]);
 		for (var i = 0; i < snake.size/4 + 20 * Math.random(); i++) {
 			addNode(nodeData[nodeData.length-1-i].x + 100*(1-2*Math.random()), nodeData[nodeData.length-1-i].y + 100*(1-2*Math.random()), "apple", ["boss"]);
@@ -857,6 +860,7 @@ function spawnApple() {
 	closeSelectedMenu();
 	
 }
+var counter = 0;
 function updateSnake() {
 	var movement = unitify(snake, mouse);
 	snake.direction = movement;
@@ -873,11 +877,11 @@ function updateSnake() {
 		var scaledSnake = {x: snake.x / xScaleFactor, y: snake.y};
 		var dist2 = mag(scaledSnake, nodes[i]);
 		var tmass = nodes[i].size ** 2 / 5000;
-		var c = ((Math.log(snake.size*nodes[i].size*speed*1) ** 0.5) / (0.1 + dist2*2));
+		var c = 1 * ((Math.log(snake.size*nodes[i].size*speed) ** 0.5) / (0.1 + dist2*2));
 		var dx = c*(nodes[i].x - scaledSnake.x);
 		var dy = c*(nodes[i].y - scaledSnake.y);
-		nodes[i].x += dx;
-		nodes[i].y += dy;
+		nodes[i].x += 5*dx;
+		nodes[i].y += 5*dy;
 		if (snake.size <= nodes[i].size) {
 			snake.x -= dx;
 			snake.y -= dy;
@@ -888,10 +892,12 @@ function updateSnake() {
 			for (var j = 0; j < gained * 3; j++) {
 				snake.trail.push({x: snake.trail[snake.trail.length-1].x, y: snake.trail[snake.trail.length-1].y, size: snake.trail[snake.trail.length-1].size});
 			}
-			snake.speed = (snake.trail.length / 200 + 1.2);
+			snake.speed = (snake.trail.length / 100 + 1.2);
+			nodeData[i].markedForEat = 1;
 			deleteNode(i);
 			spawnApple();
-			zoom *= 0.99;
+			counter++;
+			zoom *= 0.99 + 0.005 * (2 - zoom);
 			continue;
 		}
 		
