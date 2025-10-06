@@ -469,8 +469,8 @@ app.post('/curricula/:id', async (req, res) => {
 				}
 				// Update the date - update the last user to update it as well at some point
 				db.run(
-					`UPDATE user_files SET last_updated = ? WHERE id = ?`,
-					[Date.now(), req.params.id],
+					`UPDATE user_files SET filename = ?, last_updated = ? WHERE id = ?`,
+					[filename, Date.now(), req.params.id],
 					function (dbErr) {
 						if (dbErr) {
 							console.error('Failed to save file info to DB:', dbErr);
