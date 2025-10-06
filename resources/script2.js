@@ -334,12 +334,22 @@ window.onload = async function(event) {
 	
 	var worked = await importCurriculum(res);
 	if (worked) {
+		setTitle(filename);
 		update();
 		setSaveStatus(true);
 	} else {
 		window.location.href = "/";
 	}
 	
+}
+
+function setTitle(filename) {
+	document.getElementsByClassName("curriculum-title")[0].value = filename;
+}
+
+function udpateTitle() {
+	filename = document.getElementsByClassName("curriculum-title")[0].value;
+	setSaveStatus(false);
 }
 
 function setSaveStatus(saved) {
@@ -362,6 +372,7 @@ async function save() {
 	curricula.tagColours = tagColours;
 	
 	var projectId = window.location.pathname.split("/")[2];
+	console.log(filename);
 	const response = await fetch('/curricula/' + projectId, {
 		method: 'POST',
 		headers: {
@@ -371,7 +382,7 @@ async function save() {
 		body: JSON.stringify(curricula)
 	});
 	
-	if ([200, 500].includes(response.status)) { // looks bad, but is algs dw
+	if ([200].includes(response.status)) {
 		setSaveStatus(true);
 	}
 }

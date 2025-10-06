@@ -316,6 +316,26 @@ h2 {
 	right: 0px;
 }
 
+.curriculum-title {
+	position: absolute;
+	top: 10px;
+	left: 10px;
+	background-color: transparent;
+	outline: none;
+	border: 2px dashed #bbb;
+	
+	border-radius: 3px;
+	padding: 3px 5px;
+	
+	font-size: 18px;
+	color: #444;
+}
+
+.curriculum-title:focus {
+	border: 2px solid #1553db;
+	background-color: #fff;
+}
+
 .save-btn {
 	background-color: #1553db;
 }
