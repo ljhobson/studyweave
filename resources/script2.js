@@ -332,9 +332,17 @@ window.onload = async function(event) {
 	}
 	
 	
+	
+	
 	var worked = await importCurriculum(res);
 	if (worked) {
 		setTitle(filename);
+		if (filename === "snake_curriculum.json") {
+			snakeMode = true;
+		}
+		if (snakeMode) {
+			snakeInit();
+		}
 		update();
 		setSaveStatus(true);
 	} else {
@@ -399,16 +407,24 @@ function loadNodeData() {
 	update();
 }
 
-function addNode(x, y) {
+function addNode(x, y, name, tags) {
 	if (!(x != undefined && y != undefined)) {
 		x = Math.random();
 		y = Math.random();
 	}
-	nodeData.push( { id: nodeData.length, text: "new node", x: x, y: y, size: 5, connections: [], tags: [] });
+	if (!name) {
+		name = "new node";
+	}
+	if (!tags) {
+		tags = [];
+	}
+	nodeData.push( { id: nodeData.length, text: name, x: x, y: y, size: 5, connections: [], tags: tags });
 	selected = nodeData.length-1;
 	displayNodesAround(selected, degree);
 	openSelectedMenu(selected);
-	temperature = 1;
+	if (!snakeMode) {
+		temperature = 1;
+	}
 	setSaveStatus(false);
 }
 
@@ -418,7 +434,9 @@ function addConnection(i, j) {
 	nodeData[j].connections.push(i);
 	displayNodesAround(i, degree);
 	openSelectedMenu(i);
-	temperature = 1;
+	if (!snakeMode) {
+		temperature = 1;
+	}
 	setSaveStatus(false);
 }
 
@@ -431,23 +449,32 @@ function removeConnection(i, j) {
 	}
 	displayNodesAround(i, degree);
 	openSelectedMenu(i);
-	temperature = 1;
+	if (!snakeMode) {
+		temperature = 1;
+	}
 	setSaveStatus(false);
 }
 
 function tryDelete() {
 	if (confirm("Are you sure you want to delete " + nodeData[selected].text + "?")) {
-		for (var i = 0; i < nodeData.length; i++) {
-			if (nodeData[i] && nodeData[i].connections.includes(selected)) {
-				nodeData[i].connections.splice(nodeData[i].connections.indexOf(selected), 1);
-			}
-		}
-		nodeData[selected] = undefined;
-		nodes[selected] = undefined;
-		selected = null;
-		canvas.focus();
+		deleteNode(selected);
 	}
 }
+function deleteNode(selected) {
+	for (var i = 0; i < nodeData.length; i++) {
+		if (nodeData[i] && nodeData[i].connections.includes(selected)) {
+			nodeData[i].connections.splice(nodeData[i].connections.indexOf(selected), 1);
+		}
+	}
+	nodeData[selected] = undefined;
+	nodes[selected] = undefined;
+	selected = null;
+	canvas.focus();
+	displayAllNodes();
+	setSaveStatus(false);
+}
+
+var snakeMode = false;
 
 var allNodes = true;
 
@@ -468,9 +495,19 @@ var scroll = {x: 0, y: 0, xoff: 0, yoff: 0};
 var scrolling = false;
 
 window.onmousemove = function(event) {
-	mouse.x = -canvas.width/2 + event.clientX - Math.ceil(document.getElementsByClassName("sidebar")[0]?.getBoundingClientRect().width || 0);
-	mouse.y = -canvas.height/2 + event.clientY;
+	mouse.screenX = -canvas.width/2 + event.clientX - Math.ceil(document.getElementsByClassName("sidebar")[0]?.getBoundingClientRect().width || 0);
+	mouse.screenY = -canvas.height/2 + event.clientY;
 	
+	updateMouse();
+}
+
+function updateMouse() {
+	if (!mouse.screenX || !mouse.screenY) {
+		mouse.screenX = 0;
+		mouse.screenY = 0;
+	}
+	mouse.x = mouse.screenX;
+	mouse.y = mouse.screenY;
 	
 	if (draggingTab !== null) {
 		moveTab(draggingTab, mouse.x, mouse.y);
@@ -486,13 +523,14 @@ window.onmousemove = function(event) {
 	
 	mouse.x += scroll.x;
 	mouse.y += scroll.y;
-	
 }
 
 canvas.onmousedown = function(event) {
 	mouse.down = true;
-	mouse.x = -canvas.width/2 + event.clientX - Math.ceil(document.getElementsByClassName("sidebar")[0]?.getBoundingClientRect().width || 0);
-	mouse.y = -canvas.height/2 + event.clientY;
+	mouse.screenX = -canvas.width/2 + event.clientX - Math.ceil(document.getElementsByClassName("sidebar")[0]?.getBoundingClientRect().width || 0);
+	mouse.screenY = -canvas.height/2 + event.clientY;
+	mouse.x = mouse.screenX;
+	mouse.y = mouse.screenY;
 	
 	mouse.x /= zoom;
 	mouse.y /= zoom;
@@ -537,8 +575,10 @@ canvas.onwheel = function(event) {
 
 window.onmouseup = function(event) {
 	mouse.down = false;
-	mouse.x = -canvas.width/2 + event.clientX - Math.ceil(document.getElementsByClassName("sidebar")[0]?.getBoundingClientRect().width || 0);
-	mouse.y = -canvas.height/2 + event.clientY;
+	mouse.screenX = -canvas.width/2 + event.clientX - Math.ceil(document.getElementsByClassName("sidebar")[0]?.getBoundingClientRect().width || 0);
+	mouse.screenY = -canvas.height/2 + event.clientY;
+	mouse.x = mouse.screenX;
+	mouse.y = mouse.screenY;
 	mouse.x /= zoom;
 	mouse.y /= zoom;
 	
@@ -732,6 +772,251 @@ function drawRoundedRect(ctx, x, y, w, h, r) {
 	ctx.closePath();
 }
 
+function unitify(snake, mouse) {
+	if (mouse.x === undefined || mouse.y === undefined) {
+		mouse.x = 0;
+		mouse.y = 0;
+	}
+	var dist = Math.sqrt(mag(snake, mouse));
+	if (dist === 0) {
+		dist = 0.01;
+	}
+	return {x: (mouse.x - snake.x) / dist, y: (mouse.y - snake.y) / dist};
+}
+var snake = {};
+function snakeInit() {
+	snake = {x: 0, y: 0, size: 	11, speed: 1.2, growth: 1, colour: 100, trail: [], direction: {x: 0, y: 0}, dir1: {x: 0, y: 0}, dir2: {x: 0, y: 0}};
+	for (var i = 0; i < 15; i++) {
+		snake.trail.push({x: snake.x, y: snake.y, size: snake.size});
+	}
+	
+	// spawn some apples
+	if (nodeData.length === 0) {
+		for (var i = 0; i < 100; i++) {
+			addNode(100*(1-2*Math.random()) * canvas.width/xScaleFactor, 100*(1-2*Math.random())*canvas.height, "apple", ["food"]);
+		}
+	}
+	
+	zoom = 2;
+	
+	
+	if (!tags.includes("food")) {
+		tags.push("food");
+		tagColours.push("#e31");
+	}
+	if (!tags.includes("boss")) {
+		tags.push("boss");
+		tagColours.push("#a10");
+	}
+	
+	closeSelectedMenu();
+}
+var spawnBoss = false;
+function spawnApple() {
+	if (nodeData.length > 100) {
+		if (snake.size > 40 && Math.random() < 0.01) {
+			spawnBoss = true;
+		} else if (!spawnBoss) {
+			addNode(snake.x + (1-6*Math.random()*Math.random())*canvas.width/xScaleFactor, snake.y + (1-6*Math.random()*Math.random())*canvas.height, "apple", ["food"]);
+		}
+	} else {
+		for (var i = 0; i < 3; i++) {
+			addNode(snake.x + (1-4*Math.random()*Math.random())*canvas.width/xScaleFactor, snake.y + (1-4*Math.random()*Math.random())*canvas.height, "apple", ["food"]);
+		}
+	}
+	if (spawnBoss && nodeData.filter(item => item !== undefined).length < 300) {
+		spawnBoss = false;
+		addNode(snake.x + 1.5*(1-2*(Math.random() > 0.5))*canvas.width/xScaleFactor / zoom, snake.y + 1.5*(1-2*(Math.random() > 0.5))*canvas.height / zoom, "Boss", ["boss"]);
+		for (var i = 0; i < snake.size/4 + 20 * Math.random(); i++) {
+			addNode(nodeData[nodeData.length-1-i].x + 100*(1-2*Math.random()), nodeData[nodeData.length-1-i].y + 100*(1-2*Math.random()), "apple", ["boss"]);
+			
+			addConnection(nodeData.length - 1, nodeData.length - 2 - i);
+		}
+	}
+	for (var i = 0; i < snake.trail.length / 100; i++) {
+		var node1 = Math.floor(Math.random() * nodeData.length);
+		var min = 9999999999999999;
+		var node2 = null;
+		for (var j = 0; j < nodeData.length; j++) {
+			if (!nodeData[node1] || !nodeData[j]) {
+				continue;
+			}
+			var dist2 = mag(nodeData[node1], nodeData[j]);
+			if (dist2 < 100) {
+				parent = j;
+				break;
+			}
+			if (dist2 < min) {
+				node2 = j;
+				min = dist2;
+			}
+		}
+		if (nodes[node1] && nodes[node2]) {
+			addConnection(node1, node2);
+		}
+	}
+	
+	
+	if (!tags.includes("food")) {
+		tags.push("food");
+		tagColours.push("#e31");
+	}
+	if (!tags.includes("boss")) {
+		tags.push("boss");
+		tagColours.push("#a10");
+	}
+	
+	temperature = Math.max(temperature, 0.01);
+	
+	closeSelectedMenu();
+	
+}
+var counter = 0;
+function updateSnake() {
+	var movement = unitify(snake, mouse);
+	snake.direction = movement;
+	snake.eye1 = {x: snake.x + (snake.direction.x * snake.size/2 + snake.direction.y * snake.size/2), y: snake.y + (-snake.direction.x * snake.size/2 + snake.direction.y * snake.size/2)};
+	snake.eye2 = {x: snake.x + (snake.direction.x * snake.size/2 - snake.direction.y * snake.size/2), y: snake.y + (snake.direction.x * snake.size/2 + snake.direction.y * snake.size/2)};
+	snake.closest1 = null;
+	snake.closest2 = null;
+	var min1 = 999999999999;
+	var min2 = 999999999999;
+	for (var i = 0; i < nodes.length; i++) {
+		if (!nodes[i]) {
+			continue;
+		}
+		var scaledSnake = {x: snake.x / xScaleFactor, y: snake.y};
+		var dist2 = mag(scaledSnake, nodes[i]);
+		var tmass = nodes[i].size ** 2 / 5000;
+		var c = 1 * ((Math.log(snake.size*nodes[i].size*speed) ** 0.5) / (0.1 + dist2*2));
+		var dx = c*(nodes[i].x - scaledSnake.x);
+		var dy = c*(nodes[i].y - scaledSnake.y);
+		if (nodes[i].markedForEat) {
+			var d = -1 * ((Math.log(snake.size*nodes[i].size*speed) ** 0.5) / (0.1 + dist2*2));
+			var dx = d*(nodes[i].x - scaledSnake.x);
+			var dy = d*(nodes[i].y - scaledSnake.y);
+			nodes[i].x += 5*dx;
+			nodes[i].y += 5*dy;
+			nodes[i].size *= 0.9;
+			nodes[i].markedForEat++;
+			if (nodes[i].markedForEat > 10) {
+				deleteNode(i);
+			}
+			continue;
+		}
+		nodes[i].x += 5*dx;
+		nodes[i].y += 5*dy;
+		if (snake.size <= nodes[i].size) {
+			snake.x -= dx;
+			snake.y -= dy;
+		}
+		if (dist2 <= (snake.size*0.98) ** 2 && snake.size > nodes[i].size) {
+			var gained = (nodes[i].size ** 2) / (snake.size ** 2) * snake.growth * 8;
+			snake.size += gained;
+			for (var j = 0; j < gained * 3; j++) {
+				snake.trail.push({x: snake.trail[snake.trail.length-1].x, y: snake.trail[snake.trail.length-1].y, size: snake.trail[snake.trail.length-1].size});
+			}
+			snake.speed = (snake.trail.length / 100 + 1.2);
+			nodeData[i].markedForEat = 1;
+			//deleteNode(i);
+			spawnApple();
+			counter++;
+			zoom *= 0.99 + 0.005 * (2 - zoom);
+			continue;
+		}
+		
+		// calculate closest to the eyes
+		if (snake.closest1 === null || mag({x: snake.eye1.x / xScaleFactor, y: snake.eye1.y}, nodes[i]) < min1) {
+			min1 = mag({x: snake.eye1.x / xScaleFactor, y: snake.eye1.y}, nodes[i]);
+			snake.closest1 = i;
+		}
+		if (snake.closest2 === null || mag({x: snake.eye2.x / xScaleFactor, y: snake.eye2.y}, nodes[i]) < min2) {
+			min2 = mag({x: snake.eye2.x / xScaleFactor, y: snake.eye2.y}, nodes[i]);
+			snake.closest2 = i;
+		}
+		
+	}
+	if (mag(snake, mouse) <= snake.size * snake.size) {
+		return;
+	}
+	snake.x += movement.x * snake.speed;
+	snake.y += movement.y * snake.speed;
+	snake.eye1 = {x: snake.x + (snake.direction.x * snake.size/2 + snake.direction.y * snake.size/2), y: snake.y + (-snake.direction.x * snake.size/2 + snake.direction.y * snake.size/2)};
+	snake.eye2 = {x: snake.x + (snake.direction.x * snake.size/2 - snake.direction.y * snake.size/2), y: snake.y + (snake.direction.x * snake.size/2 + snake.direction.y * snake.size/2)};
+	//update trail
+	snake.trail[0].x = snake.x;
+	snake.trail[0].y = snake.y;
+	snake.trail[0].size = snake.size;
+	for (var i = snake.trail.length - 1; i > 0; i--) {
+		snake.trail[i].x = (snake.trail[i-1].x + snake.trail[i].x) / 2;
+		snake.trail[i].y = (snake.trail[i-1].y + snake.trail[i].y) / 2;
+		snake.trail[i].size = (snake.trail[i-1].size + snake.trail[i].size) / 2;
+	}
+}
+function drawSnake() {
+	var snakeX = (snake.x - scroll.x) * zoom + canvas.width/2;
+	var snakeY = (snake.y - scroll.y) * zoom + canvas.height/2;
+	
+	ctx.fillStyle = "#000";
+	for (var i = snake.trail.length - 1; i > 0; i--) {
+		ctx.fillStyle = `hsl(${snake.colour + i + 30}, 80%, 20%)`;
+		ctx.beginPath();
+		ctx.arc((snake.trail[i].x - scroll.x) * zoom + canvas.width/2, (snake.trail[i].y - scroll.y) * zoom + canvas.height/2, snake.trail[i].size * zoom * 1.1, 0, 2*Math.PI);
+		ctx.fill();
+	}
+	ctx.beginPath();
+	ctx.arc(snakeX, snakeY, snake.size * zoom * 1.1, 0, 2*Math.PI);
+	ctx.fill();
+	
+	for (var i = snake.trail.length - 1; i > 0; i--) {
+		ctx.fillStyle = `hsl(${snake.colour + i}, 80%, 50%)`;
+		ctx.beginPath();
+		ctx.arc((snake.trail[i].x - scroll.x) * zoom + canvas.width/2, (snake.trail[i].y - scroll.y) * zoom + canvas.height/2, snake.trail[i].size * zoom, 0, 2*Math.PI);
+		ctx.fill();
+	}
+	ctx.beginPath();
+	ctx.arc(snakeX, snakeY, snake.size * zoom, 0, 2*Math.PI);
+	ctx.fill();
+	
+	var eyeRadius = snake.size * 0.25;
+	
+	var eye1 = snake.eye1;
+	var eye2 = snake.eye2;
+	ctx.lineWidth = zoom * eyeRadius * 0.4;
+	ctx.strokeStyle = "#000";
+	ctx.fillStyle = "#fff";
+	ctx.beginPath();
+	ctx.arc((eye1.x - scroll.x) * zoom + canvas.width/2, (eye1.y - scroll.y) * zoom + canvas.height/2, snake.size * 0.5 * zoom, 0, 2*Math.PI);
+	ctx.fill();
+	ctx.stroke();
+	ctx.beginPath();
+	ctx.arc((eye2.x - scroll.x) * zoom + canvas.width/2, (eye2.y - scroll.y) * zoom + canvas.height/2, snake.size * 0.5 * zoom, 0, 2*Math.PI);
+	ctx.fill();
+	ctx.stroke();
+	
+	if (snake.closest1 !== null && nodes[snake.closest1]) {
+		dir1New = unitify({x: snake.eye1.x / xScaleFactor, y: snake.eye1.y}, nodes[snake.closest1]);
+		snake.dir1 = {x: (snake.dir1.x + dir1New.x) / 2, y: (snake.dir1.y + dir1New.y) / 2};
+	} else {
+		dir1New = unitify(snake.eye1, mouse);
+		snake.dir1 = {x: (snake.dir1.x + dir1New.x) / 2, y: (snake.dir1.y + dir1New.y) / 2};
+	}
+	if (snake.closest2 !== null && nodes[snake.closest2]) {
+		dir2New = unitify({x: snake.eye2.x / xScaleFactor, y: snake.eye2.y}, nodes[snake.closest2]);
+		snake.dir2 = {x: (snake.dir2.x + dir2New.x) / 2, y: (snake.dir2.y + dir2New.y) / 2};
+	} else {
+		dir2New = unitify(snake.eye2, mouse);
+		snake.dir2 = {x: (snake.dir2.x + dir2New.x) / 2, y: (snake.dir2.y + dir2New.y) / 2};
+	}
+	ctx.fillStyle = "#000";
+	ctx.beginPath();
+	ctx.arc((eye1.x - scroll.x + snake.dir1.x * eyeRadius) * zoom + canvas.width/2, (eye1.y - scroll.y + snake.dir1.y * eyeRadius) * zoom + canvas.height/2, snake.size * 0.2 * zoom, 0, 2*Math.PI);
+	ctx.fill();
+	ctx.beginPath();
+	ctx.arc((eye2.x - scroll.x + snake.dir2.x * eyeRadius) * zoom + canvas.width/2, (eye2.y - scroll.y + snake.dir2.y * eyeRadius) * zoom + canvas.height/2, snake.size * 0.2 * zoom, 0, 2*Math.PI);
+	ctx.fill();
+}
+
 function bound(node) {
 //	if (node.x < -canvas.width/2) {
 //		node.x = -canvas.width/2;
@@ -883,6 +1168,17 @@ function update() {
 		if (!nodes[i]) { continue }; // skip over empty ones
 		var subject = nodes[i];
 		drawNode(subject);
+	}
+	
+	// draw snake
+	if (snakeMode) {
+		updateSnake();
+		drawSnake();
+		if (!scrolling) {
+			scroll.x = (scroll.x * 15 + snake.x) / 16;
+			scroll.y = (scroll.y * 15 + snake.y) / 16;
+			updateMouse();
+		}
 	}
 	
 	requestAnimationFrame(update);
