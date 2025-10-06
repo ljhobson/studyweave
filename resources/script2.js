@@ -891,6 +891,19 @@ function updateSnake() {
 		var c = 1 * ((Math.log(snake.size*nodes[i].size*speed) ** 0.5) / (0.1 + dist2*2));
 		var dx = c*(nodes[i].x - scaledSnake.x);
 		var dy = c*(nodes[i].y - scaledSnake.y);
+		if (nodes[i].markedForEat) {
+			var d = -1 * ((Math.log(snake.size*nodes[i].size*speed) ** 0.5) / (0.1 + dist2*2));
+			var dx = d*(nodes[i].x - scaledSnake.x);
+			var dy = d*(nodes[i].y - scaledSnake.y);
+			nodes[i].x += 5*dx;
+			nodes[i].y += 5*dy;
+			nodes[i].size *= 0.9;
+			nodes[i].markedForEat++;
+			if (nodes[i].markedForEat > 10) {
+				deleteNode(i);
+			}
+			continue;
+		}
 		nodes[i].x += 5*dx;
 		nodes[i].y += 5*dy;
 		if (snake.size <= nodes[i].size) {
@@ -905,7 +918,7 @@ function updateSnake() {
 			}
 			snake.speed = (snake.trail.length / 100 + 1.2);
 			nodeData[i].markedForEat = 1;
-			deleteNode(i);
+			//deleteNode(i);
 			spawnApple();
 			counter++;
 			zoom *= 0.99 + 0.005 * (2 - zoom);
