@@ -30,6 +30,7 @@ function updateSettings() {
 var xScaleFactor = 2;
 
 var filename = null;
+// Imports a curriculum from a JSON file and updates the current graph data structures.
 function importCurriculum(file) {
 	if (!file) {
 		return Promise.reject("No file provided");
@@ -100,7 +101,7 @@ function importCurriculum(file) {
 
 var tags = [];
 var tagColours = [];
-
+// Modifys the HTML document to represent the keys inside the tags list
 function updateKeys() {
 	var keys = document.getElementById("keys-content");
 	
@@ -114,6 +115,7 @@ function updateKeys() {
 	keys.innerHTML = content;
 }
 
+// Shows and hides nodes everytime tags is changed
 function updateTag(tag) {
 	let checkbox = document.getElementById("tag-" + tag);
 	for (var j = 0; j < nodes.length; j++) {
@@ -125,12 +127,14 @@ function updateTag(tag) {
 	}
 }
 
+// updates all tags
 function updateTags() {
 	for (var i = 0; i < tags.length; i++) {
 		updateTag(tags[i]);
 	}
 }
 
+// Get an AI generated curricula from the AI
 function generateTopic() {
 	var topic = document.getElementById("topic").value;
 	if (topic.length > 0) {
@@ -142,6 +146,8 @@ function generateTopic() {
 		link.remove();
 	}
 }
+
+// resize the canvas
 function resize() {
 	canvas.width = window.innerWidth - Math.ceil(document.getElementsByClassName("sidebar")[0]?.getBoundingClientRect().width || 0);
 	canvas.height = window.innerHeight;
@@ -151,7 +157,7 @@ function resize() {
 
 var nodeData = [];
 
-
+// set node position to a random location
 function updateNodeDimensions(node) {
 	if (!node) {
 		return;
@@ -167,7 +173,7 @@ function updateNodeDimensions(node) {
 }
 
 
-
+// generate 200 random nodes
 function generateNodeData() {
 	for (var i = 0; i < 200; i++) {
 		var cons = [];
@@ -181,6 +187,7 @@ function generateNodeData() {
 	}
 }
 
+// render nodes around node id
 var searched = [];
 function displayNodesAround(id, degree) {
 	if (allNodes) {
@@ -246,6 +253,7 @@ function displayNodesAround(id, degree) {
 	
 }
 
+// display all nodes
 function displayAllNodes() {
 	nodes = [];
 	for (var i = 0; i < nodeData.length; i++) {
@@ -256,6 +264,7 @@ function displayAllNodes() {
 	}
 }
 
+// handle moving the tabs
 function moveTab(i, x, y) {
 	var tabs = document.getElementsByClassName("tab-draggable");
 	var tab = tabs[i];
@@ -266,6 +275,7 @@ function moveTab(i, x, y) {
 	tab.style.top = tab.y + "px";
 }
 
+// and minimize controls to the tabs
 var draggingTab = null;
 function createControls() { // most OP function I have ever written - could be more OP if change it to classes instead of ID's
 	var tabs = document.getElementsByClassName("tab-controls");
@@ -290,6 +300,7 @@ function createControls() { // most OP function I have ever written - could be m
 	
 }
 
+// make all tab-draggable classes draggable
 function makeDraggable() {
 	// make draggable
 	var tabs = document.getElementsByClassName("tab-draggable");
@@ -311,6 +322,7 @@ function makeDraggable() {
 	}
 }
 
+// initisalize everything
 var filename = null;
 window.onload = async function(event) {
 	createControls();
@@ -372,6 +384,7 @@ function setSaveStatus(saved) {
 	}
 }
 
+// save curriculum
 async function save() {
 	var curricula = {};
 	curricula.nodes = nodeData;
@@ -395,6 +408,7 @@ async function save() {
 	}
 }
 
+// load node data and display the node
 function loadNodeData() {
 	for (var i = 0; i < nodeData.length; i++) {
 		updateNodeDimensions(nodeData[i]);
@@ -407,6 +421,7 @@ function loadNodeData() {
 	update();
 }
 
+// create a new node
 function addNode(x, y, name, tags) {
 	if (!(x != undefined && y != undefined)) {
 		x = Math.random();
@@ -428,6 +443,7 @@ function addNode(x, y, name, tags) {
 	setSaveStatus(false);
 }
 
+// create a connection between 2 nodes
 function addConnection(i, j) {
 	console.log(i, j);
 	nodeData[i].connections.push(j);
@@ -440,6 +456,7 @@ function addConnection(i, j) {
 	setSaveStatus(false);
 }
 
+// remove the connection between 2 nodes
 function removeConnection(i, j) {
 	if (nodeData[i].connections.includes(j)) {
 		nodeData[i].connections.splice(nodeData[i].connections.indexOf(j), 1);
@@ -455,11 +472,14 @@ function removeConnection(i, j) {
 	setSaveStatus(false);
 }
 
+// confirm delete a node
 function tryDelete() {
 	if (confirm("Are you sure you want to delete " + nodeData[selected].text + "?")) {
 		deleteNode(selected);
 	}
 }
+
+// delete the node
 function deleteNode(selected) {
 	for (var i = 0; i < nodeData.length; i++) {
 		if (nodeData[i] && nodeData[i].connections.includes(selected)) {
@@ -494,6 +514,7 @@ var zoom = 1;
 var scroll = {x: 0, y: 0, xoff: 0, yoff: 0};
 var scrolling = false;
 
+// handle mouse events
 window.onmousemove = function(event) {
 	mouse.screenX = -canvas.width/2 + event.clientX - Math.ceil(document.getElementsByClassName("sidebar")[0]?.getBoundingClientRect().width || 0);
 	mouse.screenY = -canvas.height/2 + event.clientY;
@@ -501,6 +522,7 @@ window.onmousemove = function(event) {
 	updateMouse();
 }
 
+// handle mouse events
 function updateMouse() {
 	if (!mouse.screenX || !mouse.screenY) {
 		mouse.screenX = 0;
@@ -525,6 +547,7 @@ function updateMouse() {
 	mouse.y += scroll.y;
 }
 
+// handle mouse events
 canvas.onmousedown = function(event) {
 	mouse.down = true;
 	mouse.screenX = -canvas.width/2 + event.clientX - Math.ceil(document.getElementsByClassName("sidebar")[0]?.getBoundingClientRect().width || 0);
@@ -569,10 +592,12 @@ canvas.onmousedown = function(event) {
 	closeSelectedMenu();
 }
 
+// handle mouse events
 canvas.onwheel = function(event) {
 	zoom *= 1+0.1*(1-2*(event.deltaY>0));
 }
 
+// handle mouse events
 window.onmouseup = function(event) {
 	mouse.down = false;
 	mouse.screenX = -canvas.width/2 + event.clientX - Math.ceil(document.getElementsByClassName("sidebar")[0]?.getBoundingClientRect().width || 0);
@@ -587,6 +612,7 @@ window.onmouseup = function(event) {
 	draggingTab = null;
 }
 
+// open the properties panel
 function openSelectedMenu(i) {
 	if (i === undefined) {
 		i = selected;
@@ -652,17 +678,19 @@ function openSelectedMenu(i) {
 	document.getElementById("connections-to-add").innerHTML = cons;
 }
 
+// close the properties
 function closeSelectedMenu() {
 	document.getElementsByClassName("selected")[0].style.display = "none";
 }
 
+// update selected
 function updateSelected() {
 	nodeData[selected].text = document.getElementById("selectedName").value;
 	nodeData[selected].tags = Array(document.getElementById("selected-tags").value);
 	setSaveStatus(false);
 }
 
-
+// make the network bidirectional
 function makeBidirectional(nodes) {
 	for (let i = 0; i < nodes.length; i++) {
 		if (!nodes[i]) { continue }; // skip over empty ones
@@ -676,6 +704,7 @@ function makeBidirectional(nodes) {
 	}
 }
 
+// handle window resize to resize the canvas
 window.onresize = function(event) {
 	resize();
 }
@@ -684,6 +713,7 @@ var speed = 10;
 var isRandom = true;
 var nodes = [];
 
+// render the node on the HTML canvas
 function drawNode(node) {
 //	var strength = 0;
 //	for (var i = 0; i < node.connections.length; i++) {
@@ -758,6 +788,7 @@ function drawNode(node) {
 	ctx.fillText(node.text, canvas.width/2 + (renderX-textWidth/2 - scroll.x) * zoom, canvas.height/2 + (node.y - scroll.y) * zoom);
 }
 
+// draw functions
 function drawRoundedRect(ctx, x, y, w, h, r) {
 	ctx.beginPath();
 	ctx.moveTo(x + r, y);
@@ -772,6 +803,7 @@ function drawRoundedRect(ctx, x, y, w, h, r) {
 	ctx.closePath();
 }
 
+// scale to magnitude is 1
 function unitify(snake, mouse) {
 	if (mouse.x === undefined || mouse.y === undefined) {
 		mouse.x = 0;
@@ -1085,6 +1117,7 @@ var prevTime = null;
 
 var fps;
 
+// main update loop
 function update() {
 	// measuring the fps stuff vvv
 	frames++;
