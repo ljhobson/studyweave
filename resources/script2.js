@@ -172,12 +172,12 @@ function generateNodeData() {
 	for (var i = 0; i < 200; i++) {
 		var cons = [];
 		for (var j = 0; j < Math.floor(Math.random() * Math.random() * Math.random() * 50); j++) {
-			var number = Math.floor(Math.random() * 200);
-			if (!cons.includes(number) && number !== i) {
+			var number = Math.floor(Math.random() * (nodeData.length-1));
+			if (!cons.includes(number) && number !== nodeData.length) {
 				cons.push(number);
 			}
 		}
-		nodeData.push( { id:i, x: Math.random()*canvas.width, y: Math.random()*canvas.height, size: Math.floor(5 + cons.length * 5), connections: cons } )
+		nodeData.push( { id:nodeData.length, x: Math.random()*canvas.width, y: Math.random()*canvas.height, size: Math.floor(5 + cons.length * 5), connections: cons, text: "test node", tags: [] } )
 	}
 }
 
@@ -204,7 +204,7 @@ function displayNodesAround(id, degree) {
 //		console.log(distance);
 		subject.isDot = false;
 		if (dotsOnFinal && distance === degree) {
-			subject.isDot = true;
+			//subject.isDot = true;
 		}
 		subject.degree = distance;
 		nodes[subject.id] = (subject);
@@ -687,7 +687,7 @@ function drawNode(node) {
 	if (node.isDot) {
 		ctx.fillStyle = nodeStyle.strokeColor;
 		ctx.beginPath();
-		ctx.arc(renderX * zoom, node.y * zoom, 5, 0, Math.PI * 2);
+		ctx.arc(canvas.width/2 + (renderX - scroll.x) * zoom, canvas.height/2 + (node.y - scroll.y) * zoom, 5, 0, Math.PI * 2);
 		ctx.fill();
 		return;
 	}
@@ -794,7 +794,28 @@ function mag(a, b) {
 //	return dx * dx + dy * dy;
 //}
 
+
+var frames = 0;
+var prevTime = null;
+
+var fps;
+
 function update() {
+	// measuring the fps stuff vvv
+	frames++;
+	var now = new Date();
+	if (prevTime !== null) {
+		if ((now - prevTime) > 1000) {
+			fps = frames;
+			frames = 0;
+			console.log(fps);
+			prevTime = now;
+		}
+	} else {
+		prevTime = now;
+	}
+	// measuring the fps stuff ^^^
+	
 	resize();
 	temperature *= cooling;
 	
