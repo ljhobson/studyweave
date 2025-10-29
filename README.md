@@ -21,3 +21,11 @@ then boom, just run the app
 and go to the following URL in your browser
 
 `http://localhost:3000/`
+
+## Database Stuff
+
+The database is located in `./users.db`, and all user generated resources are located in the `./user-resources/` directory.
+
+These are self-generating, so at any point if you want to clear all data, you can just delete the database and user-resources folder together.
+
+You can backup individual curiculums, by making a local copy of the file which is located in the `./user-resources/` directory.
